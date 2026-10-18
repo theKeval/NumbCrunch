@@ -13,7 +13,7 @@ The version lives in one file, [`version.properties`](../version.properties):
 
 ```properties
 VERSION_CODE=3
-VERSION_NAME=1.0.2
+VERSION_NAME=1.1.0
 ```
 
 `numbcrunch/build.gradle` reads it into `defaultConfig`, and the in-app About
@@ -267,10 +267,10 @@ version instead of replacing it:
 
 | Build | Application ID | Launcher name | About shows |
 | --- | --- | --- | --- |
-| Release (Play) | `io.keval.apps.numbcrunch` | NumbCrunch | `1.0.2` |
-| Debug (Android Studio, `installDebug`) | `io.keval.apps.numbcrunch.debug` | NumbCrunch Debug | `1.0.2-debug` |
+| Release (Play) | `io.keval.apps.numbcrunch` | NumbCrunch | `1.1.0` |
+| Debug (Android Studio, `installDebug`) | `io.keval.apps.numbcrunch.debug` | NumbCrunch Debug | `1.1.0-debug` |
 
-Debug builds made before 1.0.2 used the release application ID with the debug
+Debug builds made before 1.1.0 used the release application ID with the debug
 key. A leftover copy like that, even one installed only in another user profile
 such as a guest profile, blocks Play from installing the app. Find it and
 remove it from every profile:

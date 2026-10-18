@@ -5,7 +5,7 @@ Each entry records the version name, the version code Play consumed, and where
 it shipped. The version comes from [`version.properties`](version.properties);
 see [docs/releasing.md](docs/releasing.md) for the release process.
 
-## 1.0.2 (versionCode 3) — unreleased
+## 1.1.0 (versionCode 3) — unreleased
 
 - New in-game Privacy policy screen, opened from About.
 - About no longer links to websites; nothing in the game takes you out of
