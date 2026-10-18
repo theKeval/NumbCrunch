@@ -260,6 +260,28 @@ Before the first production release, Play requires:
 Production releases are reviewed by Google, which can take from hours to
 several days.
 
+## Release Optimization
+
+The `release` build enables R8 code optimization, shrinking, and obfuscation,
+plus resource shrinking, using `proguard-android-optimize.txt`. Debug builds
+remain unoptimized. Dependencies supply their own consumer rules; add a narrow
+rule in `numbcrunch/proguard-rules.pro` only when runtime behavior requires it.
+Avoid blanket keep rules; they prevent optimization.
+
+AGP includes `BUNDLE-METADATA/com.android.tools/r8.json` and
+`BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map` in the AAB.
+Play reads these to report optimization metrics and deobfuscate crash reports.
+The local mapping is also saved at
+`numbcrunch/build/outputs/mapping/release/mapping.txt`; keep the mapping for the
+exact uploaded build when archiving its bundle. Obfuscation need not reach
+100%: Android entry points and library keep rules legitimately preserve names.
+
+Before uploading an optimized release, smoke-test the release build on a
+device, not just a debug build: first-run tutorial, both game modes,
+About and the offline Privacy policy, and persisted music/sound settings.
+Check that audio and artwork still load. JVM tests alone cannot catch every
+runtime issue caused by optimization.
+
 ## Debug Builds
 
 Debug builds use their own application ID, so they install beside the Play

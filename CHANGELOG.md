@@ -10,6 +10,8 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
 - New in-game Privacy policy screen, opened from About.
 - About no longer links to websites; nothing in the game takes you out of
   the app.
+- Release builds optimize and obfuscate code and remove unused code and
+  resources to reduce the app size.
 - Debug builds install as a separate app, `io.keval.apps.numbcrunch.debug`
   ("NumbCrunch Debug"), so they no longer block installing the Play version.
 - A version guard fails pull requests and `bundleRelease` when app files
