@@ -92,9 +92,9 @@ and has no responsibility for the app or for supporting it.
 
 ## Governing Law
 
-These terms are governed by the laws of [JURISDICTION], without regard to its
-conflict of laws rules. This does not take away any mandatory consumer
-protections that apply where you live.
+These terms are governed by the laws of the place where you are located when
+you use the app, including any mandatory consumer protections that apply
+there.
 
 ## Changes to These Terms
 
