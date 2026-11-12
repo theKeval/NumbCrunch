@@ -1,6 +1,7 @@
 package io.keval.apps.numbcrunch.gameplay.home
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -8,16 +9,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +38,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,11 +51,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchChocolateDark
+import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldBorder
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchTheme
+import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOrangeTop
 import io.keval.apps.numbcrunch.domain.game.CODE_LENGTH
+import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.usecase.GetWelcomeMessageUseCase
 import io.keval.apps.numbcrunch.gameplay.R
+import io.keval.apps.numbcrunch.gameplay.audio.rememberTapFeedback
+import io.keval.apps.numbcrunch.gameplay.common.labelRes
 import io.keval.apps.numbcrunch.gameplay.game.GameRoundIconButton
 import io.keval.apps.numbcrunch.gameplay.navigation.GAMEPLAY_GUIDE_ENABLED
 
@@ -65,11 +83,12 @@ fun HomeRoute(
     HomeScreen(
         uiState = uiState,
         onPlayerModeSelected = viewModel::onPlayerModeSelected,
+        onDifficultySelected = viewModel::onDifficultySelected,
         onFriendSecretDigit = viewModel::onFriendSecretDigit,
         onFriendSecretDelete = viewModel::onFriendSecretDelete,
         onStartClick = {
             if (viewModel.canStartGame()) {
-                onStartClick(uiState)
+                onStartClick(viewModel.uiState.value)
                 viewModel.onGameStarted()
             }
         },
@@ -85,6 +104,7 @@ fun HomeRoute(
 fun HomeScreen(
     uiState: HomeUiState,
     onPlayerModeSelected: (PlayerMode) -> Unit,
+    onDifficultySelected: (Difficulty) -> Unit,
     onFriendSecretDigit: (Char) -> Unit,
     onFriendSecretDelete: () -> Unit,
     onStartClick: () -> Unit,
@@ -140,6 +160,7 @@ fun HomeScreen(
 
             val topGapBase = 16.dp
             val betweenControlsBase = if (uiState.playerMode == PlayerMode.DOUBLE) 8.dp else 14.dp
+            val difficultyHeightBase = 100.dp
             val controlSpacingBase = maxContentWidth * 0.035f
             val bottomPaddingBase = 12.dp
             val validationHeightBase = if (uiState.playerMode == PlayerMode.DOUBLE && uiState.secretValidationMessage != null) 24.dp else 0.dp
@@ -155,9 +176,10 @@ fun HomeScreen(
                 toggleHeightBase +
                     betweenControlsBase +
                     inputSectionHeight +
+                    difficultyHeightBase +
                     startHeightBase +
                     (secondaryHeightBase * secondaryButtonCount) +
-                    (controlSpacingBase * (secondaryButtonCount + 1))
+                    (controlSpacingBase * (secondaryButtonCount + 2))
 
             val staticHeight = topGapBase + titleHeightBase + bottomPaddingBase + controlsHeightBase
             val verticalHeadroom = (availableHeight - staticHeight).coerceAtLeast(0.dp)
@@ -220,6 +242,7 @@ fun HomeScreen(
                         controlSpacing = controlSpacing,
                         betweenControls = betweenControls,
                         onPlayerModeSelected = selectPlayerMode,
+                        onDifficultySelected = onDifficultySelected,
                         onSecretSlotClick = { secretSheetOpen = true },
                         onStartClick = startGame,
                         onTutorialClick = onTutorialClick,
@@ -263,6 +286,7 @@ private fun ControlsSection(
     controlSpacing: Dp,
     betweenControls: Dp,
     onPlayerModeSelected: (PlayerMode) -> Unit,
+    onDifficultySelected: (Difficulty) -> Unit,
     onSecretSlotClick: () -> Unit,
     onStartClick: () -> Unit,
     onTutorialClick: () -> Unit,
@@ -310,6 +334,13 @@ private fun ControlsSection(
         Spacer(modifier = Modifier.height(controlSpacing))
     }
 
+    DifficultySelector(
+        difficulty = uiState.difficulty,
+        onDifficultySelected = onDifficultySelected,
+    )
+
+    Spacer(modifier = Modifier.height(controlSpacing))
+
     HomePrimaryButton(
         text = stringResource(R.string.label_start),
         contentDescription = stringResource(R.string.cd_start_game),
@@ -347,6 +378,67 @@ private fun ControlsSection(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DifficultySelector(
+    difficulty: Difficulty,
+    onDifficultySelected: (Difficulty) -> Unit,
+) {
+    val feedback = rememberTapFeedback()
+    val colors = SegmentedButtonDefaults.colors(
+        activeContainerColor = NumbCrunchGoldBorder,
+        activeContentColor = NumbCrunchChocolateDark,
+        activeBorderColor = NumbCrunchGoldBorder,
+        inactiveContainerColor = NumbCrunchChocolateDark,
+        inactiveContentColor = NumbCrunchGoldCream,
+        inactiveBorderColor = NumbCrunchGoldBorder,
+    )
+    Column(
+        modifier = Modifier.widthIn(max = 320.dp).fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.difficulty_label),
+            color = NumbCrunchOrangeTop,
+            fontFamily = FontFamily.Serif,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelLarge,
+        )
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            Difficulty.entries.forEachIndexed { index, option ->
+                SegmentedButton(
+                    selected = difficulty == option,
+                    onClick = {
+                        if (difficulty != option) {
+                            feedback()
+                            onDifficultySelected(option)
+                        }
+                    },
+                    shape = SegmentedButtonDefaults.itemShape(index, Difficulty.entries.size),
+                    colors = colors,
+                    label = { Text(stringResource(option.labelRes)) },
+                )
+            }
+        }
+        Text(
+            text = stringResource(
+                when (difficulty) {
+                    Difficulty.EASY -> R.string.difficulty_easy_description
+                    Difficulty.MEDIUM -> R.string.difficulty_medium_description
+                    Difficulty.HARD -> R.string.difficulty_hard_description
+                },
+            ),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            color = NumbCrunchGoldBorder,
+            fontFamily = FontFamily.Serif,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
 @Preview(showBackground = true, name = "Single mode")
 @Composable
 private fun HomeScreenSinglePreview() {
@@ -354,6 +446,7 @@ private fun HomeScreenSinglePreview() {
         HomeScreen(
             uiState = HomeUiState(playerMode = PlayerMode.SINGLE),
             onPlayerModeSelected = {},
+            onDifficultySelected = {},
             onFriendSecretDigit = {},
             onFriendSecretDelete = {},
             onStartClick = {},
@@ -376,6 +469,7 @@ private fun HomeScreenDoublePreview() {
                 secretValidationMessage = "Digits must be unique",
             ),
             onPlayerModeSelected = {},
+            onDifficultySelected = {},
             onFriendSecretDigit = {},
             onFriendSecretDelete = {},
             onStartClick = {},
@@ -394,6 +488,7 @@ private fun HomeScreenSmallPreview() {
         HomeScreen(
             uiState = HomeUiState(playerMode = PlayerMode.DOUBLE, friendSecretNumber = ""),
             onPlayerModeSelected = {},
+            onDifficultySelected = {},
             onFriendSecretDigit = {},
             onFriendSecretDelete = {},
             onStartClick = {},
@@ -412,6 +507,7 @@ private fun HomeScreenTabletPreview() {
         HomeScreen(
             uiState = HomeUiState(playerMode = PlayerMode.SINGLE),
             onPlayerModeSelected = {},
+            onDifficultySelected = {},
             onFriendSecretDigit = {},
             onFriendSecretDelete = {},
             onStartClick = {},

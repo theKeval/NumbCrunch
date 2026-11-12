@@ -1,11 +1,13 @@
 package io.keval.apps.numbcrunch.gameplay.game
 
+import androidx.annotation.MainThread
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import io.keval.apps.numbcrunch.domain.game.CODE_LENGTH
+import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.game.GuessRules
 import io.keval.apps.numbcrunch.domain.game.isCodeDigit
 import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
@@ -16,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class GameViewModel(
     private val savedStateHandle: SavedStateHandle,
     friendSecret: String?,
+    requestedDifficulty: Difficulty,
     private val generateSecret: () -> String = { GuessRules.generateSecret() },
 ) : ViewModel() {
 
@@ -29,12 +32,20 @@ class GameViewModel(
             ?.let { saved -> PlayerMode.entries.firstOrNull { it.name == saved } }
             ?: if (friendSecret != null && GuessRules.isValidCode(friendSecret)) PlayerMode.DOUBLE else PlayerMode.SINGLE
 
+    private val difficulty = if (savedSecret != null) {
+        Difficulty.fromName(savedStateHandle.get<Any>(KEY_DIFFICULTY) as? String) ?: Difficulty.HARD
+    } else {
+        requestedDifficulty
+    }
+
     private var secret: String = savedSecret
         ?: (if (playerMode == PlayerMode.DOUBLE) friendSecret!! else generateSecret())
 
     init {
+        if (savedSecret == null) savedStateHandle.remove<Any>(KEY_HINTED_GUESS_INDEX)
         savedStateHandle[KEY_SECRET] = secret
         savedStateHandle[KEY_MODE] = playerMode.name
+        savedStateHandle[KEY_DIFFICULTY] = difficulty.name
     }
 
     private val _uiState = MutableStateFlow(restoreState())
@@ -70,6 +81,14 @@ class GameViewModel(
             showWinDialog = evaluation.isWin,
             lastRevealedIndex = guesses.lastIndex,
         )
+    }
+
+    @MainThread
+    fun onHint(guessIndex: Int) {
+        val state = _uiState.value
+        if (!state.canUseHint(guessIndex)) return
+        savedStateHandle[KEY_HINTED_GUESS_INDEX] = guessIndex
+        _uiState.value = state.copy(hintedGuessIndex = guessIndex)
     }
 
     /** Returns true when the screen may leave immediately without confirmation. */
@@ -125,7 +144,8 @@ class GameViewModel(
         savedStateHandle[KEY_INPUT] = ""
         savedStateHandle[KEY_WIN_DIALOG] = false
         savedStateHandle[KEY_GIVEN_UP] = false
-        _uiState.value = GameUiState(playerMode = playerMode)
+        savedStateHandle.remove<Any>(KEY_HINTED_GUESS_INDEX)
+        _uiState.value = GameUiState(playerMode = playerMode, difficulty = difficulty)
     }
 
     private fun updateInput(input: String) {
@@ -134,10 +154,19 @@ class GameViewModel(
     }
 
     private fun restoreState(): GameUiState {
-        val guesses = savedStateHandle.get<ArrayList<String>>(KEY_GUESSES)
-            .orEmpty()
+        val savedGuesses = savedStateHandle.get<ArrayList<String>>(KEY_GUESSES).orEmpty()
+        val guesses = savedGuesses
             .filter(GuessRules::isValidCode)
             .map { GuessRules.evaluate(secret, it) }
+        val hintedGuessIndex = if (difficulty == Difficulty.MEDIUM) {
+            savedStateHandle.get<Any>(KEY_HINTED_GUESS_INDEX)?.let { savedIndex ->
+                // Dropped guesses can shift row indices. Keep the hint spent without revealing another row.
+                (savedIndex as? Int)?.takeIf { savedGuesses.size == guesses.size && it in guesses.indices }
+                    ?: INVALID_HINT_INDEX.also { savedStateHandle[KEY_HINTED_GUESS_INDEX] = it }
+            }
+        } else {
+            null
+        }
         val isWon = guesses.lastOrNull()?.isWin == true
         val isGivenUp = !isWon && savedStateHandle.get<Boolean>(KEY_GIVEN_UP) == true
         val input = savedStateHandle.get<String>(KEY_INPUT)
@@ -148,24 +177,29 @@ class GameViewModel(
             .orEmpty()
         return GameUiState(
             playerMode = playerMode,
+            difficulty = difficulty,
             guesses = guesses,
             currentInput = input,
             isWon = isWon,
             isGivenUp = isGivenUp,
             revealedSecret = secret.takeIf { isWon || isGivenUp },
             showWinDialog = isWon && savedStateHandle.get<Boolean>(KEY_WIN_DIALOG) == true,
+            hintedGuessIndex = hintedGuessIndex,
         )
     }
 
     companion object {
         private const val KEY_SECRET = "game_secret"
         private const val KEY_MODE = "game_mode"
+        private const val KEY_DIFFICULTY = "game_difficulty"
         private const val KEY_GUESSES = "game_guesses"
         private const val KEY_INPUT = "game_input"
         private const val KEY_WIN_DIALOG = "game_win_dialog"
         private const val KEY_GIVEN_UP = "game_given_up"
+        private const val KEY_HINTED_GUESS_INDEX = "game_hinted_guess_index"
+        private const val INVALID_HINT_INDEX = -1
 
-        fun factory(friendSecret: String?): ViewModelProvider.Factory {
+        fun factory(friendSecret: String?, difficulty: Difficulty): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(
@@ -175,7 +209,7 @@ class GameViewModel(
                     require(modelClass.isAssignableFrom(GameViewModel::class.java)) {
                         "Unknown ViewModel class: ${modelClass.name}"
                     }
-                    return GameViewModel(extras.createSavedStateHandle(), friendSecret) as T
+                    return GameViewModel(extras.createSavedStateHandle(), friendSecret, difficulty) as T
                 }
             }
         }

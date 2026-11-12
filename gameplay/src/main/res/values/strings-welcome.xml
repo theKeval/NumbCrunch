@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_title">Welcome!</string>
+    <string name="welcome_goal">Guess a hidden number with three different digits.</string>
+    <string name="welcome_clues">Use the clue from each guess to narrow it down.</string>
+    <string name="welcome_view_tutorial">View tutorial</string>
+    <string name="welcome_go_home">Go to Home</string>
+    <string name="welcome_saving">Saving…</string>
+</resources>

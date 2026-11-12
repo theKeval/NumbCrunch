@@ -23,12 +23,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.core.os.bundleOf
 import androidx.navigation.NavHostController
+import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import androidx.navigation.navOptions
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOnWood
+import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.about.AboutScreen
 import io.keval.apps.numbcrunch.gameplay.common.NumbCrunchScreenScaffold
@@ -37,6 +41,7 @@ import io.keval.apps.numbcrunch.gameplay.home.HomeRoute
 import io.keval.apps.numbcrunch.gameplay.info.GameplayInfoScreen
 import io.keval.apps.numbcrunch.gameplay.navigation.ABOUT_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.FIRST_RUN_TUTORIAL_ROUTE
+import io.keval.apps.numbcrunch.gameplay.navigation.GAME_DIFFICULTY_ARGUMENT
 import io.keval.apps.numbcrunch.gameplay.navigation.GAMEPLAY_INFO_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.GAME_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.HOME_ROUTE
@@ -47,7 +52,9 @@ import io.keval.apps.numbcrunch.gameplay.navigation.SETTINGS_ROUTE
 import io.keval.apps.numbcrunch.gameplay.privacy.PrivacyPolicyScreen
 import io.keval.apps.numbcrunch.gameplay.settings.SettingsRoute
 import io.keval.apps.numbcrunch.gameplay.navigation.TUTORIAL_ROUTE
+import io.keval.apps.numbcrunch.gameplay.navigation.WELCOME_ROUTE
 import io.keval.apps.numbcrunch.gameplay.tutorial.TutorialScreen
+import io.keval.apps.numbcrunch.gameplay.welcome.WelcomeScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -86,10 +93,66 @@ fun NumbCrunchNavHost(
     ) {
         composable(LAUNCH_GATE_ROUTE) {
             FirstRunLaunchGate(appContainer) { tutorialCompleted ->
-                navController.navigate(if (tutorialCompleted) HOME_ROUTE else FIRST_RUN_TUTORIAL_ROUTE) {
+                navController.navigate(if (tutorialCompleted) HOME_ROUTE else WELCOME_ROUTE) {
                     popUpTo(LAUNCH_GATE_ROUTE) { inclusive = true }
                     launchSingleTop = true
                 }
+            }
+        }
+
+        composable(
+            route = WELCOME_ROUTE,
+            enterTransition = { slideInFromRight() },
+            exitTransition = { slideOutToLeft() },
+            popEnterTransition = { slideInFromLeft() },
+            popExitTransition = { slideOutToRight() },
+        ) { entry ->
+            val scope = rememberCoroutineScope()
+            var completionResolved by remember { mutableStateOf(false) }
+            var isCompleting by remember { mutableStateOf(false) }
+            var completionError by rememberSaveable { mutableStateOf(false) }
+            val goHome = {
+                if (navController.currentBackStackEntry == entry) {
+                    navController.navigate(HOME_ROUTE) {
+                        popUpTo(WELCOME_ROUTE) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
+            // A restored destination may outlive a completed preference write before navigation.
+            if (!completionResolved) {
+                FirstRunLaunchGate(appContainer) { completed ->
+                    if (completed) goHome() else completionResolved = true
+                }
+            } else {
+                WelcomeScreen(
+                    onViewTutorial = {
+                        if (!isCompleting && navController.currentBackStackEntry == entry) {
+                            navController.navigate(FIRST_RUN_TUTORIAL_ROUTE) {
+                                popUpTo(WELCOME_ROUTE) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    },
+                    onGoHome = {
+                        if (!isCompleting && navController.currentBackStackEntry == entry) {
+                            isCompleting = true
+                            completionError = false
+                            scope.launch {
+                                try {
+                                    appContainer.completeFirstRunTutorialUseCase()
+                                    goHome()
+                                } catch (_: IOException) {
+                                    completionError = true
+                                } finally {
+                                    isCompleting = false
+                                }
+                            }
+                        }
+                    },
+                    isCompleting = isCompleting,
+                    completionError = completionError,
+                )
             }
         }
 
@@ -109,7 +172,7 @@ fun NumbCrunchNavHost(
                         null
                     }
                     appContainer.saveFriendSecretUseCase(secret)
-                    navController.navigate(GAME_ROUTE)
+                    navController.navigateToGame(homeState.difficulty)
                 },
                 onTutorialClick = { navController.navigate(MANUAL_TUTORIAL_ROUTE) },
                 onGameplayClick = { navController.navigate(GAMEPLAY_INFO_ROUTE) },
@@ -131,19 +194,25 @@ fun NumbCrunchNavHost(
         ) { entry ->
             val firstRun = entry.arguments?.getBoolean("firstRun") == true
             val scope = rememberCoroutineScope()
-            var isCompleting by rememberSaveable { mutableStateOf(false) }
+            var completionResolved by remember { mutableStateOf(!firstRun) }
+            var isCompleting by remember { mutableStateOf(false) }
             var completionError by rememberSaveable { mutableStateOf(false) }
+            val goHome = {
+                if (navController.currentBackStackEntry == entry) {
+                    navController.navigate(HOME_ROUTE) {
+                        popUpTo(TUTORIAL_ROUTE) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
             val completeFirstRun = {
-                if (firstRun && !isCompleting) {
+                if (firstRun && !isCompleting && navController.currentBackStackEntry == entry) {
+                    isCompleting = true
+                    completionError = false
                     scope.launch {
-                        isCompleting = true
-                        completionError = false
                         try {
                             appContainer.completeFirstRunTutorialUseCase()
-                            navController.navigate(HOME_ROUTE) {
-                                popUpTo(TUTORIAL_ROUTE) { inclusive = true }
-                                launchSingleTop = true
-                            }
+                            goHome()
                         } catch (_: IOException) {
                             completionError = true
                         } finally {
@@ -152,21 +221,27 @@ fun NumbCrunchNavHost(
                     }
                 }
             }
-            TutorialScreen(
-                onBack = {
-                    if (firstRun) completeFirstRun() else navController.navigateUp()
-                },
-                onPlay = {
-                    appContainer.saveFriendSecretUseCase(null)
-                    navController.navigate(GAME_ROUTE) {
-                        popUpTo(TUTORIAL_ROUTE) { inclusive = true }
-                    }
-                },
-                isFirstRun = firstRun,
-                onCompleteFirstRun = completeFirstRun,
-                isCompletingFirstRun = isCompleting,
-                firstRunCompletionError = completionError,
-            )
+            if (!completionResolved) {
+                FirstRunLaunchGate(appContainer) { completed ->
+                    if (completed) goHome() else completionResolved = true
+                }
+            } else {
+                TutorialScreen(
+                    onBack = {
+                        if (firstRun) completeFirstRun() else navController.navigateUp()
+                    },
+                    onPlay = {
+                        appContainer.saveFriendSecretUseCase(null)
+                        navController.navigateToGame(Difficulty.HARD) {
+                            popUpTo(TUTORIAL_ROUTE) { inclusive = true }
+                        }
+                    },
+                    isFirstRun = firstRun,
+                    onCompleteFirstRun = completeFirstRun,
+                    isCompletingFirstRun = isCompleting,
+                    firstRunCompletionError = completionError,
+                )
+            }
         }
 
         composable(
@@ -219,13 +294,19 @@ fun NumbCrunchNavHost(
 
         composable(
             route = GAME_ROUTE,
+            arguments = listOf(navArgument(GAME_DIFFICULTY_ARGUMENT) {
+                type = NavType.StringType
+                defaultValue = Difficulty.HARD.name
+            }),
             enterTransition = { slideInFromRight() },
             exitTransition = { slideOutToLeft() },
             popEnterTransition = { slideInFromLeft() },
             popExitTransition = { slideOutToRight() },
-        ) {
+        ) { entry ->
             GameRoute(
                 friendSecretNumber = appContainer.getFriendSecretUseCase(),
+                difficulty = Difficulty.fromName(entry.arguments?.getString(GAME_DIFFICULTY_ARGUMENT))
+                    ?: Difficulty.HARD,
                 onExitToHome = {
                     // Home is normally below Game; if not, open it so leaving can never strand the player.
                     if (!navController.popBackStack(HOME_ROUTE, inclusive = false)) {
@@ -241,6 +322,15 @@ fun NumbCrunchNavHost(
             )
         }
     }
+}
+
+private fun NavHostController.navigateToGame(
+    difficulty: Difficulty,
+    options: NavOptionsBuilder.() -> Unit = {},
+) {
+    // Keep the original destination ID so pre-difficulty back stacks can still restore.
+    val destination = checkNotNull(graph.findNode(GAME_ROUTE))
+    navigate(destination.id, bundleOf(GAME_DIFFICULTY_ARGUMENT to difficulty.name), navOptions(options))
 }
 
 @Composable

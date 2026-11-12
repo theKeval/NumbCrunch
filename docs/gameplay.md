@@ -43,6 +43,25 @@ means Winner," while its scoring engine displays the word `Winner`.
 The new `:numbcrunch` application implements round setup and a complete
 guessing round.
 
+### Difficulty
+
+Home offers Easy, Medium, and Hard independently of Single/Double Player.
+Easy is selected by default; changing player mode keeps the selected difficulty.
+The choice is shown in Game and cannot change during that round. Single Player
+**PLAY AGAIN** retains it. A restored round from an older version without saved
+difficulty uses Hard, and a game opened from the manual tutorial also uses Hard.
+
+- Easy: each submitted guess reveals green for an exact position, orange for
+  a digit elsewhere in the secret, and red for an absent digit.
+- Medium: one hint per round reveals all three tiles of one submitted guess.
+  That row stays revealed; other rows stay gray. Repeated identical guesses
+  are distinct rows. Hint use survives Android round restoration; a new round
+  resets it. Hints cannot be redeemed after winning or quitting.
+- Hard: submitted tiles stay gray and only aggregate remarks are available.
+
+All modes retain aggregate remarks. Pending input never reveals feedback.
+Gray means feedback is hidden, not that the digit is absent.
+
 ### Single Player
 
 1. Single Player is selected by default.
@@ -89,11 +108,10 @@ process and `AppContainer` live.
 - The custom keypad has digits 0–9, with **DELETE** bottom-left and **ENTER** bottom-right. Digits already
   in the current guess are disabled, so duplicates are impossible. ENTER is
   enabled only after three digits.
-- Empty and typed tiles use the original yellowish wood color. On ENTER, the
-  tiles flip in sequence and every analysed tile turns gray: per-digit
-  green/orange feedback is disabled to increase difficulty. Deduction uses the V1 remark
-  (`1R, 1W`, `SMYLE`, `Winner`), not individual tile colors.
-  The original green/orange/gray feedback logic is retained for reuse.
+- Empty and typed tiles use the original neutral wood color. ENTER submits
+  the guess and flips its tiles in sequence. Easy shows per-digit feedback;
+  Medium shows it only for the row whose hint was redeemed; Hard stays gray.
+  Feedback colors are separate from neutral tiles and keypad colors.
 - Each digit key plays its own note (a C-major pentatonic scale from 0 up to
   9) with a light haptic, and the key bounces and glows while pressed; a typed
   digit pops into its tile. DELETE and other buttons play soft taps.
@@ -114,7 +132,12 @@ process and `AppContainer` live.
 
 ### Other Destinations
 
-- **Tutorial:** on first launch, three swipeable steps explain the game and
+- **Welcome:** first launch offers **View tutorial** as the primary action and
+  **Go to Home** as the secondary action. Going Home saves the existing onboarding
+  completion preference before navigation. A failed save stays retryable on
+  Welcome. Players who already completed or skipped onboarding continue directly
+  to Home; Welcome is removed from the back stack when leaving it.
+- **Tutorial:** three swipeable steps explain the game and
   both modes, explain the R/W/SMYLE clues in text, and offer an interactive
   practice keypad against the shown practice secret `245`. Like a real round,
   practice guesses show gray tiles and only the remark (no per-digit colors).
@@ -128,15 +151,13 @@ process and `AppContainer` live.
   any step: to Home, and on first run it also completes onboarding like Skip.
   The footer **BACK** button and system Back step back through the pages, then
   leave from the first step. **PLAY NOW**
-  clears any friend secret and replaces Tutorial with a new Single Player game.
-- **Gameplay (hidden for now):** `GAMEPLAY_GUIDE_ENABLED` is `false`, so
-  Home's GAME PLAY button and the in-game help (`?`) button are not shown; the
-  screen and route remain. When enabled, help keeps the round, and a scrollable reference explains code constraints (including
-  leading zero), unlimited guesses, tile colors, R/W/SMYLE/Winner, both modes,
-  controls, and strategy. Four examples use `GuessRules` against secret `245`.
-  Gameplay examples retain per-digit colors for teaching; the guide
-  distinguishes these examples from the gray tiles used in real rounds.
-  Returning from in-game help preserves the existing Game entry.
+  clears any friend secret and replaces Tutorial with a new Single Player Hard game.
+- **Game Play:** Home's GAME PLAY button and the in-game help button open
+  the existing scrollable guide. It explains code constraints, leading zeroes,
+  unlimited guesses, feedback colors, R/W/SMYLE/Winner, player modes, difficulty,
+  Medium hints, controls and strategy. Worked examples use `GuessRules` with
+  secret `245`. Returning from help preserves the Game navigation entry,
+  including partial input, difficulty and spent hint.
 - **Settings:** opened from the Home gear or the in-game gear. Toggles for
   background music and sound effects are saved in Preferences DataStore and
   default on. A soothing music loop plays only while the app is in the
@@ -201,4 +222,4 @@ synthesized sounds and music/sound-effect settings (no vibration setting).
 
 The Compose app currently has no vibration setting, cross-launch round
 persistence, profiles, scoreboard, Play Games integration, timer,
-hints, or daily puzzle.
+or daily puzzle.

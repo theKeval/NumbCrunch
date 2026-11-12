@@ -35,6 +35,7 @@ repository has no clear/consume operation beyond saving `null`.
 
 ```text
 playerMode: SINGLE | DOUBLE
+difficulty: EASY | MEDIUM | HARD
 friendSecretNumber: String
 secretValidationMessage: String?
 ```
@@ -47,6 +48,10 @@ secretValidationMessage: String?
 Selecting Single Player clears the friend secret and any validation message.
 Selecting Double Player preserves a previously entered secret and clears the
 message.
+
+Difficulty is independent of player mode. It defaults to Easy and its enum name
+is stored in Home's `SavedStateHandle`; changing player mode or starting a game
+retains that choice.
 
 ### Secret Input
 
@@ -105,7 +110,7 @@ sequenceDiagram
     Home->>Nav: Valid HomeUiState
     Nav->>Save: friend secret or null
     Save->>Repo: saveFriendSecret(value)
-    Nav->>Game: navigate("game")
+    Nav->>Game: navigate with selected difficulty name
     Game->>Repo: via GetFriendSecretUseCase
     Repo-->>Game: String? secret
 ```
@@ -124,6 +129,13 @@ the round is won. The repository is process-memory only.
   flags. These are stored in `SavedStateHandle`, so they survive rotation,
   process death, and navigating to Help and back. It exposes `GameUiState` as
   a `StateFlow`.
+- `Difficulty` is a pure domain enum. Game receives the selected difficulty as
+  a nonsecret navigation argument, freezes it at round creation, and saves its
+  name in the same handle. Restored rounds with a valid saved secret use their
+  saved difficulty, falling back to Hard when older state has none. Replay
+  retains the difficulty. Easy reveals every submitted row; Medium saves one
+  redeemed guess-row index and derives its remaining hint from that state; Hard
+  hides per-digit feedback. A new round clears the redeemed row.
 - `GameRoute` collects state, handles system back with `BackHandler`, and
   delegates to a stateless `GameScreen`. A horizontal drag past 96 dp
   (`swipeToGoBack`) calls the same back request; the content follows the
@@ -144,19 +156,17 @@ the round is won. The repository is process-memory only.
 - `GameComponents` provides the `WoodPanel` (gold frame over a cropped wood
   texture), `DigitTile` with a staggered flip reveal, `RemarkBox`, `KeypadKey`,
   and `NumbCrunchDialogFrame`. These reuse the Home palette.
-  `DigitTile` retains the original feedback-to-color mapping behind
-  `colorFeedbackEnabled` (true by default for learning examples).
-  `GameScreen` passes false: tile fronts (empty, typed, and the first half
-  of the reveal flip) keep the neutral yellowish brush, and every flipped
-  (analysed) tile shows gray with light digits. Evaluations, remarks, and win
-  detection are unchanged.
+  `DigitTile` uses green/orange/red for exact/misplaced/absent feedback.
+  Neutral analyzed tiles stay gray, while pending tiles and keypad styling
+  retain their original brushes. Game reveals per-digit feedback only for
+  Easy rows and the redeemed Medium row; spoken feedback uses the same gate.
 - `RemarkBox` renders `SMYLE` with a teal fill and border. With
   `animateHeartbeat` (set for the just-revealed row) it scales through a
   one-time "lub-dub" pulse. `RemarkInfoIcon` trims font padding so the "i"
   is optically centered.
-- `RemarkInfoIcon` sits in a reserved `INFO_UNITS` column beside each
-  remark. The remark box and icon share one clickable row (well above the
-  48 dp minimum touch target). While the popup is open, the game content uses
+- `RemarkInfoIcon` sits beside each remark in Easy and Hard. Medium replaces
+  that icon with a separately accessible Hint control, preserving the original
+  tile and remark sizes. The remark itself still opens its explanation. While the popup is open, the game content uses
   `clearAndSetSemantics {}` so accessibility services see only the popup,
   which is announced through `paneTitle`. `GameScreen` holds the selected `GuessEvaluation` and shows
   `RemarkInfoPopup`, an in-window overlay animated with `AnimatedVisibility`
@@ -169,7 +179,13 @@ the round is won. The repository is process-memory only.
 ## Navigation and Learning Screens
 
 `NumbCrunchNavHost` starts at a launch gate that reads the first-run tutorial
-completion flag from Preferences DataStore, then routes to Tutorial or Home.
+completion flag from Preferences DataStore, then routes to Welcome or Home.
+Welcome uses the shared wood scaffold and offers View tutorial (primary) or
+Go to Home (secondary). The former replaces Welcome with the first-run
+tutorial; the latter saves the existing completion flag before opening Home.
+Saving disables both actions and failures remain retryable on the screen.
+The in-flight flag is not saveable, so process recreation cannot restore a
+permanently busy action whose coroutine has been cancelled.
 Skip, Get Started, and first-step system Back complete onboarding before
 opening Home; the persisted flag prevents it from returning on later launches.
 Home can still open Tutorial manually. The host declares Home, Game, Tutorial,
@@ -181,7 +197,7 @@ control, scrollable content, and 520 dp maximum width.
 Game exits by popping back to Home. Its help button, shown only when
 `GAMEPLAY_GUIDE_ENABLED` (`navigation/GameplayRoutes.kt`) is true, navigates
 to Gameplay (`launchSingleTop`) and leaves Game on the back stack. The flag is
-currently false, which also hides Home's GAME PLAY button. When enabled, a
+true, enabling both Home's GAME PLAY button and game help. A
 matching spacer on the left keeps the title centered. Quit is the `GamePillButton`
 **SHOW** in the mode-badge row, styled like `GameModeBadge` with a 48 dp touch
 target.
@@ -202,7 +218,7 @@ through `TutorialRepository` and `PreferencesTutorialRepository`. The header
 back button calls `exit` (complete first run, or `onBack` to Home) from any page;
 the footer BACK button and system Back (`back`) move through pages and then
 exit. **PLAY NOW** saves a
-null friend secret and replaces Tutorial with Game, starting Single Player.
+null friend secret and replaces Tutorial with Game, starting Single Player Hard.
 
 The clue-rules page (step 2) is wrapped in `FitToHeight` (`common/FitToHeight.kt`)
 so it shows without scrolling. A `SubcomposeLayout` measures the page at its natural
@@ -250,17 +266,22 @@ stay crisp across screen sizes and densities.
 ## Revamp Tests
 
 - `HomeViewModelTest` covers duplicate-message consistency, empty-on-type
-  versus required-on-start behavior, and valid Double Player setup.
+  versus required-on-start behavior, valid Double Player setup, and independent
+  difficulty selection/restoration.
 - `GetWelcomeMessageUseCaseTest` verifies repository delegation.
 - `GuessRulesTest` covers validation, generation, and the full remark table.
 - `GameViewModelTest` covers input guards, scoring, winning, exit
-  confirmation, play-again, and `SavedStateHandle` restoration.
+  confirmation, play-again, and `SavedStateHandle` restoration, including
+  difficulty retention and legacy Hard fallback.
 - `RemarkMeaningTest` checks remark-to-meaning mapping for every remark type.
 - `LearningExamplesTest` verifies displayed remarks and exhaustively checks
   the tutorial's deduction against every valid code consistent with its clues.
 
-There are no current Compose UI, navigation, repository, or instrumentation
-tests.
+Android instrumentation tests under `numbcrunch/src/androidTest` cover
+onboarding persistence/retry/restoration, navigation and gameplay feedback
+semantics. These tests can be compiled with `:numbcrunch:assembleDebugAndroidTest`;
+execution requires a connected device or emulator. Device execution and manual
+TalkBack/layout acceptance are tracked separately from JVM test results.
 
 ## Guesser V1 Implementation
 

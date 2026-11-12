@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="difficulty_label">Difficulty</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_medium">Medium</string>
+    <string name="difficulty_hard">Hard</string>
+    <string name="difficulty_easy_description">Color clues for every guess</string>
+    <string name="difficulty_medium_description">One hint per round</string>
+    <string name="difficulty_hard_description">Remarks only</string>
+</resources>

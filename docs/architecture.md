@@ -28,7 +28,7 @@ There is deliberately no dependency edge between the revamp modules and
 | Module | Type | Responsibility |
 | --- | --- | --- |
 | `:numbcrunch` | Android application | Application object, activity, composition root, and Navigation Compose host |
-| `:gameplay` | Android library | Home UI/state plus Game, Tutorial, Gameplay, and About destinations |
+| `:gameplay` | Android library | Welcome and Home UI/state plus Game, Tutorial, Gameplay, and About destinations |
 | `:domain` | Kotlin/JVM library | Repository interfaces, thin use cases, and pure game rules (`GuessRules`) |
 | `:data` | Android library | App-info, in-memory game-session, and Preferences DataStore tutorial repositories |
 | `:core-ui` | Android library | Material 3 colors, typography, and `NumbCrunchTheme` |
@@ -46,7 +46,9 @@ flowchart TD
     COMPOSE --> NAV[NumbCrunchNavHost]
     NAV --> GATE[FirstRunLaunchGate]
     GATE --> HOME[HomeRoute]
-    GATE --> TUTORIAL[TutorialScreen]
+    GATE --> WELCOME[WelcomeScreen]
+    WELCOME --> TUTORIAL[TutorialScreen]
+    WELCOME --> HOME
     NAV --> GAME[GameRoute]
     NAV --> INFO[GameplayInfoScreen]
     NAV --> ABOUT[AboutScreen]
@@ -70,41 +72,49 @@ No dependency-injection framework is used.
 
 ## Navigation
 
-`NumbCrunchNavHost` owns six user-facing routes and a launch-gate route:
+`NumbCrunchNavHost` owns the user-facing routes and a launch-gate route:
 
 | Route | Destination | Current status |
 | --- | --- | --- |
-| `launch_gate` | `FirstRunLaunchGate` | Reads saved onboarding completion before opening Tutorial or Home |
+| `launch_gate` | `FirstRunLaunchGate` | Reads saved onboarding completion before opening Welcome or Home |
+| `welcome` | `WelcomeScreen` | First-run choice: View tutorial or Go to Home |
 | `settings` | `SettingsRoute` | Music and sound-effect toggles, opened from Home or Game |
 | `home` | `HomeRoute` | Implemented |
-| `game` | `GameRoute` | Implemented: keypad, guess board, scoring, leave/quit-reveal/win dialogs, help, settings, sound and confetti |
+| `game` | `GameRoute` | Difficulty-aware round setup, keypad, difficulty-aware guess board, scoring, leave/quit-reveal/win dialogs, settings, sound and confetti |
 | `tutorial?firstRun={firstRun}` | `TutorialScreen` | Three swipeable steps, isolated practice, onboarding or manual entry |
-| `gameplay_info` | `GameplayInfoScreen` | Visual rules, examples, modes, controls, strategy; entry points hidden by `GAMEPLAY_GUIDE_ENABLED = false` |
+| `gameplay_info` | `GameplayInfoScreen` | Visual rules, examples, difficulty/hints, controls and strategy; accessible from Home and Game help |
 | `about` | `AboutScreen` | Story, credits, runtime version, Privacy policy button |
 | `privacy_policy` | `PrivacyPolicyScreen` | The bundled `PRIVACY.md`, rendered in wood panels; no external links |
 
 Forward and backward navigation use 320 ms horizontal slide transitions. The
 home Start handler saves either the valid Double Player secret or `null` for
-Single Player before navigating to `game`.
-First-run completion is stored by `PreferencesTutorialRepository`; Skip,
+Single Player before navigating to Game with the selected difficulty name.
+The route stays `game` to preserve saved navigation destination IDs; a nonsecret
+argument Bundle carries difficulty. First-run completion is stored by
+`PreferencesTutorialRepository`; Welcome's Go to Home, tutorial Skip,
 Get Started, and Back from the first page all mark onboarding complete.
+Welcome is removed when opening Tutorial or Home, so Back cannot reopen it.
 
 ## Revamp State Ownership
 
 | State | Owner | Lifetime |
 | --- | --- | --- |
 | Selected player mode | `HomeViewModel` / `HomeUiState` | Home navigation entry/ViewModel |
+| Selected difficulty | `HomeViewModel` / `SavedStateHandle` | Home navigation entry, including process recreation |
 | Friend secret input | `HomeViewModel` / `HomeUiState` | Home navigation entry/ViewModel |
 | Validation message | `HomeViewModel` / `HomeUiState` | Home navigation entry/ViewModel |
 | Handed-off friend secret | `InMemoryGameSessionRepository` | `AppContainer` / application process |
-| Round secret, guesses, input, dialogs | `GameViewModel` / `SavedStateHandle` | Game navigation entry, including process recreation |
+| Round secret, difficulty, guesses, hint use, input, dialogs | `GameViewModel` / `SavedStateHandle` | Game navigation entry, including process recreation |
 | Navigation back stack | `NavHostController` | Compose activity instance |
 | Music and sound-effect settings | `PreferencesSettingsRepository` (DataStore) | Across launches |
 | Sound pool and music player | `NumbCrunchAudio` in `AppContainer` | Application process; music paused while the activity is stopped |
 
 `HomeUiState` and `GameUiState` are exposed as read-only `StateFlow`s and
-collected with lifecycle awareness. Only the Game round uses
-`SavedStateHandle`. There is no database or cross-launch game persistence.
+collected with lifecycle awareness. Home difficulty and the Game round use
+`SavedStateHandle`. New Home selections default to Easy; older restored rounds
+without a saved difficulty use Hard. Difficulty cannot change within a round,
+and Single Player replay retains it. There is no database or cross-launch game
+persistence.
 Tutorial completion and audio settings share one Preferences DataStore file
 (`numbcrunch_preferences`) through a single delegate in `NumbCrunchPreferences.kt`.
 
@@ -152,9 +162,10 @@ wood panels, tiles, and remark boxes with text descriptions for each clue.
 Tutorial practice state is local `rememberSaveable` state, not a Game ViewModel
 or session repository. First-run completion is a separate Preferences DataStore
 value behind the domain `TutorialRepository`; the launch gate waits for that
-value before choosing Tutorial or Home. Skip/Get Started and system Back from
+value before choosing Welcome or Home. Welcome can open Tutorial or save the
+existing completion preference and go directly Home. Skip/Get Started and system Back from
 the first tutorial page save completion. Manual Tutorial remains available.
-Its Play action clears the friend secret and replaces Tutorial with Game;
+Its Play action clears the friend secret and replaces Tutorial with a Hard Game;
 Gameplay help only pops back to the existing round.
 
 ## Application Boundaries

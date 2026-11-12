@@ -54,7 +54,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
@@ -78,15 +80,18 @@ import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchWoodBottom
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchWoodTop
 import io.keval.apps.numbcrunch.domain.game.DigitFeedback
 import io.keval.apps.numbcrunch.domain.game.GuessRules
+import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.audio.GameSound
 import io.keval.apps.numbcrunch.gameplay.audio.rememberTapFeedback
 import kotlinx.coroutines.delay
 
 internal val GoldFrameBrush = Brush.verticalGradient(listOf(NumbCrunchGoldBorder, NumbCrunchBronzeDark, NumbCrunchGoldBorder))
 private val TileEmptyBrush = Brush.verticalGradient(listOf(Color(0xFFE2BC86), Color(0xFFCD9D62), Color(0xFFBE8A50)))
-private val TileExactBrush = Brush.verticalGradient(listOf(Color(0xFF7CC94E), Color(0xFF55A535), Color(0xFF3D8526)))
-private val TileCloseBrush = Brush.verticalGradient(listOf(NumbCrunchOrangeTop, NumbCrunchOrangeMid, NumbCrunchOrangeBottom))
-private val TileAbsentBrush = Brush.verticalGradient(listOf(Color(0xFF7A746E), Color(0xFF5E5853), Color(0xFF48433F)))
+private val TileNeutralBrush = Brush.verticalGradient(listOf(Color(0xFF7A746E), Color(0xFF5E5853), Color(0xFF48433F)))
+private val TileExactBrush = Brush.verticalGradient(listOf(Color(0xFF427F28), Color(0xFF326E21), Color(0xFF285A1B)))
+private val TileCloseBrush = Brush.verticalGradient(listOf(Color(0xFFFFB55C), Color(0xFFF59A31), Color(0xFFE58C26)))
+private val TileAbsentBrush = Brush.verticalGradient(listOf(Color(0xFFB83B3C), Color(0xFFA12C32), Color(0xFF862329)))
+private val KeyAmberBrush = Brush.verticalGradient(listOf(NumbCrunchOrangeTop, NumbCrunchOrangeMid, NumbCrunchOrangeBottom))
 private val KeyDeleteBrush = Brush.verticalGradient(listOf(Color(0xFFF2734F), Color(0xFFD9472A), Color(0xFFB2301A)))
 private val KeySecondaryBrush = Brush.verticalGradient(listOf(NumbCrunchWoodTop, NumbCrunchWoodBottom))
 private val RemarkFill = Color(0xE62A170D)
@@ -302,11 +307,24 @@ internal fun digitTileBrush(
 ): Brush = when {
     showFront || state !is TileState.Revealed -> TileEmptyBrush
     // Without color feedback, every analysed (flipped) tile shows the neutral gray.
-    !colorFeedbackEnabled -> TileAbsentBrush
+    !colorFeedbackEnabled -> TileNeutralBrush
     state.feedback == DigitFeedback.EXACT -> TileExactBrush
     state.feedback == DigitFeedback.CLOSE -> TileCloseBrush
     else -> TileAbsentBrush
 }
+
+@Composable
+internal fun digitFeedbackDescription(digit: Char, feedback: DigitFeedback): String = stringResource(
+    R.string.guide_digit_description,
+    digit.toString(),
+    stringResource(
+        when (feedback) {
+            DigitFeedback.EXACT -> R.string.clue_exact
+            DigitFeedback.CLOSE -> R.string.clue_close
+            DigitFeedback.ABSENT -> R.string.clue_absent
+        },
+    ),
+)
 
 @Composable
 fun DigitTile(
@@ -339,6 +357,8 @@ fun DigitTile(
     }
 
     val brush = digitTileBrush(state, showFront, colorFeedbackEnabled)
+    val revealedTile = (state as? TileState.Revealed)?.takeIf { !showFront && colorFeedbackEnabled }
+    val digitClue = revealedTile?.let { digitFeedbackDescription(it.digit, it.feedback) }
     val digit = when (state) {
         TileState.Empty -> null
         is TileState.Pending -> state.digit
@@ -348,10 +368,19 @@ fun DigitTile(
         isCursor -> NumbCrunchOrangeTop
         else -> Color(0x99331A0A)
     }
+    val light = !showFront && revealedTile?.feedback != DigitFeedback.CLOSE
+    val digitColor = if (light) LightDigitColor else DarkDigitColor
 
     Box(
         modifier = modifier
             .size(size)
+            .then(
+                if (digitClue != null) {
+                    Modifier.clearAndSetSemantics { contentDescription = digitClue }
+                } else {
+                    Modifier
+                },
+            )
             .graphicsLayer {
                 rotationX = if (state is TileState.Revealed) {
                     if (showFront) rotation.value else rotation.value - 180f
@@ -377,11 +406,10 @@ fun DigitTile(
         contentAlignment = Alignment.Center,
     ) {
         if (digit != null) {
-            val light = !showFront
             Text(
                 text = digit.toString(),
                 style = TextStyle(
-                    color = if (light) LightDigitColor else DarkDigitColor,
+                    color = digitColor,
                     fontFamily = FontFamily.Serif,
                     fontWeight = FontWeight.Black,
                     fontSize = with(LocalDensity.current) { (size * 0.56f).toSp() },
@@ -576,7 +604,7 @@ fun KeypadKey(
     val brush = when (style) {
         KeyStyle.Delete -> KeyDeleteBrush
         KeyStyle.Secondary -> KeySecondaryBrush
-        else -> TileCloseBrush
+        else -> KeyAmberBrush
     }
     val labelSize: TextUnit = with(LocalDensity.current) {
         (if (style == KeyStyle.Digit) height * 0.52f else height * 0.3f).toSp()
