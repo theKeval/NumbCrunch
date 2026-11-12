@@ -3,8 +3,44 @@
 This checklist is for the debug build (`io.keval.apps.numbcrunch.debug`), which
 installs beside the Play app. Jira GUESSER-8 records 53 passing JVM tests and
 10 passing Android tests on the OnePlus 7T, plus visual Home/Easy/Medium checks.
-The full manual checklist below still needs acceptance, especially TalkBack,
-large fonts and real Android process recreation.
+Real Android process recreation also passed the checks recorded below.
+Manual TalkBack and large-font acceptance remain open in GUESSER-8.
+
+## Process-restart results — November 12, 2026
+
+Tested the 1.2.0/code 4 debug APK on the wireless OnePlus 7T (HD1901).
+For each of the nine cases, backgrounded the app with Home, ran `am kill`
+against the debug package, confirmed its PID disappeared, and opened its
+original Android Recents card. Every case resumed the same task with a new
+PID and matching visible text/accessibility descriptions. No app fixes were
+needed.
+
+| Case | Result |
+| --- | --- |
+| Double / Medium, unused hint | Both identical `527` guesses stayed neutral, input `48` survived, one hint remained |
+| Double / Medium, spent hint | Only the second `527` occurrence retained revealed clues, input `48` survived, zero hints remained |
+| Double / Medium, won | Win dialog, secret and guess count restored |
+| Double / Easy | Colored submitted clues, aggregate remark, difficulty and partial input restored |
+| Double / Hard | Neutral submitted clues, aggregate remark, difficulty and partial input restored; no hints |
+| Single / Easy | Round, colored clues and partial input restored |
+| Single / Hard, Settings open | Settings restored; Back returned to the unchanged round and partial input |
+| Single / Medium, Game Play open | Guide restored; Back returned to the unchanged round, partial input and spent hint |
+| Single / Medium, quit | Quit-result dialog and revealed secret restored; no hint action |
+
+The deterministic Double Player checks used secret `573`. After both Medium
+hint-restoration checks, completing `481` scored SMYLE and submitting `573`
+won, confirming that the original secret survived.
+
+These checks exercise actual process death, beyond the existing Compose
+state-restoration tests. They use Recents rather than a new explicit Activity
+launch, which can create another Activity instead of resuming the saved one.
+
+A separate force-stop/cold-launch check passed: completed onboarding stayed
+completed and the app opened Home. A new Medium round had no old guesses and
+exactly one hint. Force-stop is a fresh-launch boundary; saved rounds are
+task-scoped, not a durable saved-game database. No app data was cleared.
+The installed APK's SHA-256 matched the tested revision, and the app was left
+on Home.
 
 ## First launch
 
