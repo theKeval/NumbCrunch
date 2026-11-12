@@ -84,6 +84,23 @@ The different application IDs allow both builds to be installed together. The
 revamp's debug build is `io.keval.apps.numbcrunch.debug`, labelled
 "NumbCrunch Debug", so it also installs beside the Play version.
 
+### Test Play Games sign-in
+
+Use a Google Play-enabled device with an existing Play Games profile. The
+profile's Google account must be listed in Play Console's Play Games Services
+testers and, while OAuth is in Testing, in Google Cloud's OAuth test users.
+The Android credential for `io.keval.apps.numbcrunch.debug` must match the
+SHA-1 of the certificate that signed the installed debug APK.
+
+Install and launch the debug build using the commands above, then run:
+
+```bash
+adb logcat -d -s NumbCrunchPlayGames:D
+```
+
+Look for `Authenticated: true` from the latest launch. The SDK signs in at
+startup and suppresses automatic prompts to create a Play Games profile.
+
 ## Changing the Revamp
 
 ### Domain and Data

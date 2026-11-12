@@ -61,7 +61,9 @@ flowchart TD
     COMPLETE --> TUTORIAL_REPO
 ```
 
-`NumbCrunchApplication` lazily creates one `AppContainer`. The container performs
+`NumbCrunchApplication` initializes Play Games Services at startup and lazily
+creates one `AppContainer`. Play Games sign-in runs independently of navigation
+and gameplay. The container performs
 manual dependency injection by obtaining repositories from `RepositoryModule`
 and constructing use cases. `MainActivity` enables edge-to-edge drawing and
 sets Compose content. `NumbCrunchApp` creates the navigation controller.

@@ -5,7 +5,12 @@ Each entry records the version name, the version code Play consumed, and where
 it shipped. The version comes from [`version.properties`](version.properties);
 see [docs/releasing.md](docs/releasing.md) for the release process.
 
-## 1.1.0 (versionCode 3) — unreleased
+## 1.2.0 (versionCode 4) — unreleased
+
+- Google Play Games Services can sign in players with an existing profile.
+  Gameplay remains available offline and without an account.
+
+## 1.1.0 (versionCode 3) — 2026-10-18
 
 - New in-game Privacy policy screen, opened from About.
 - About no longer links to websites; nothing in the game takes you out of

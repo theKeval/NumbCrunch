@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">NumbCrunch</string>
+    <string name="game_services_project_id" translatable="false">552743622678</string>
 </resources>

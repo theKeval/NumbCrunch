@@ -95,9 +95,9 @@ See the [architecture guide](docs/architecture.md) and
 - XML Views, Navigation Component, LiveData, and ViewModel for V1
 - JUnit 4 tests
 
-The current revamp has no backend, account system, analytics, or network
-integration. Double Player secrets are held only in memory and are lost when
-the application process ends.
+Gameplay works offline and without an account. Google Play Games Services
+can authenticate players with an existing profile at launch. Double Player
+secrets are held only in memory and are lost when the application process ends.
 
 ## Build and Test
 
