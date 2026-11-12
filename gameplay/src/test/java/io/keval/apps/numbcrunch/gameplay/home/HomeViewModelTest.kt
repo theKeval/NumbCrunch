@@ -1,5 +1,7 @@
 package io.keval.apps.numbcrunch.gameplay.home
 
+import androidx.lifecycle.SavedStateHandle
+import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.repository.AppInfoRepository
 import io.keval.apps.numbcrunch.domain.usecase.GetWelcomeMessageUseCase
 import org.junit.Assert.assertEquals
@@ -9,13 +11,25 @@ import org.junit.Test
 
 class HomeViewModelTest {
 
-    private val viewModel = HomeViewModel(
+    private val viewModel = viewModel()
+
+    private fun viewModel(handle: SavedStateHandle = SavedStateHandle()) = HomeViewModel(
         GetWelcomeMessageUseCase(
             object : AppInfoRepository {
                 override fun getWelcomeMessage(): String = "Welcome"
             },
         ),
+        handle,
     )
+
+    @Test
+    fun `difficulty defaults to Easy when saved selection is missing or malformed`() {
+        assertEquals(Difficulty.EASY, viewModel.uiState.value.difficulty)
+        for (invalid in listOf("UNKNOWN", 2)) {
+            val handle = SavedStateHandle(mapOf("home_difficulty" to invalid))
+            assertEquals(Difficulty.EASY, viewModel(handle).uiState.value.difficulty)
+        }
+    }
 
     @Test
     fun `start keeps the same validation message shown while typing`() {
@@ -50,7 +64,10 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `starting a double player game clears the friend secret but keeps the mode`() {
+    fun `starting a double player game clears the friend secret and keeps mode and difficulty`() {
+        val handle = SavedStateHandle()
+        val viewModel = viewModel(handle)
+        viewModel.onDifficultySelected(Difficulty.MEDIUM)
         viewModel.onPlayerModeSelected(PlayerMode.DOUBLE)
         viewModel.onFriendSecretNumberChanged("258")
         assertTrue(viewModel.canStartGame())
@@ -58,8 +75,10 @@ class HomeViewModelTest {
         viewModel.onGameStarted()
 
         assertEquals(PlayerMode.DOUBLE, viewModel.uiState.value.playerMode)
+        assertEquals(Difficulty.MEDIUM, viewModel.uiState.value.difficulty)
         assertEquals("", viewModel.uiState.value.friendSecretNumber)
         assertEquals(null, viewModel.uiState.value.secretValidationMessage)
+        assertEquals(Difficulty.MEDIUM, viewModel(handle).uiState.value.difficulty)
     }
 
     @Test

@@ -274,7 +274,7 @@ private fun TutorialPage(
                 )
             }
             if (evaluation != null) {
-                // Like a real round: gray tiles, so only the remark guides the next guess.
+                // Practice uses Hard's gray tiles and remarks.
                 GuideGuess(evaluation, announce = true, colorFeedbackEnabled = false)
                 GuideBody(
                     stringResource(if (evaluation.isWin) R.string.tutorial_practice_win else R.string.tutorial_practice_retry),

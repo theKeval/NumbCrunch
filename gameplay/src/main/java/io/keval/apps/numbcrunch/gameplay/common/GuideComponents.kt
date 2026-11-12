@@ -60,7 +60,6 @@ import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOrangeTop
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchBronzeDark
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldBorder
-import io.keval.apps.numbcrunch.domain.game.DigitFeedback
 import io.keval.apps.numbcrunch.domain.game.GuessEvaluation
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.audio.rememberTapFeedback
@@ -70,6 +69,7 @@ import io.keval.apps.numbcrunch.gameplay.game.GoldFrameBrush
 import io.keval.apps.numbcrunch.gameplay.game.RemarkBox
 import io.keval.apps.numbcrunch.gameplay.game.TileState
 import io.keval.apps.numbcrunch.gameplay.game.WoodPanel
+import io.keval.apps.numbcrunch.gameplay.game.digitFeedbackDescription
 
 @Composable
 internal fun GuideScaffold(
@@ -206,7 +206,7 @@ internal fun GuideHeading(text: String, modifier: Modifier = Modifier) {
 }
 
 private val ClueRightColor = Color(0xFF8EE06A)
-private val ClueWrongColor = Color(0xFFFF7A66)
+private val ClueWrongColor = Color(0xFFF3C541)
 private val ClueSmyleColor = Color(0xFF4FD1C5)
 private val ClueSmyleMeaningColor = Color(0xFFFFD43B)
 private val DetailsGoalColor = Color(0xFFFFD36B)
@@ -245,7 +245,7 @@ private fun highlight(text: String, styles: List<Pair<Regex, SpanStyle>>): Annot
 
 /**
  * Makes the clue words stand out in bold: RIGHT, 1R and 2R in green; WRONG, 1W, 2W and 3W in
- * red; SMYLE in teal and "Simply Make Your Life Easy" in yellow. Only styling is added; the
+ * yellow; SMYLE in teal and "Simply Make Your Life Easy" in yellow. Only styling is added; the
  * text is unchanged.
  */
 internal fun highlightClueWords(text: String): AnnotatedString = highlight(text, ClueWordStyles)
@@ -355,8 +355,8 @@ internal fun GuideAction(
 }
 
 /**
- * A scored guess row. With [colorFeedbackEnabled] false it matches real rounds: every tile is
- * gray and only the remark is announced, so no per-digit hint is given.
+ * A scored guess row. With [colorFeedbackEnabled] false, it shows Hard's gray tiles and
+ * announces only the guess and its remark.
  */
 @Composable
 internal fun GuideGuess(
@@ -368,16 +368,7 @@ internal fun GuideGuess(
         stringResource(
             R.string.guide_guess_description, evaluation.guess, evaluation.remark,
             evaluation.digits.mapIndexed { index, feedback ->
-                stringResource(
-                    R.string.guide_digit_description, evaluation.guess[index].toString(),
-                    stringResource(
-                        when (feedback) {
-                            DigitFeedback.EXACT -> R.string.clue_exact
-                            DigitFeedback.CLOSE -> R.string.clue_close
-                            DigitFeedback.ABSENT -> R.string.clue_absent
-                        },
-                    ),
-                )
+                digitFeedbackDescription(evaluation.guess[index], feedback)
             }.joinToString("; "),
         )
     } else {

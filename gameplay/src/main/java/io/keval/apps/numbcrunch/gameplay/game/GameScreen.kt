@@ -34,6 +34,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,10 +57,13 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -66,8 +71,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchTheme
 import io.keval.apps.numbcrunch.domain.game.CODE_LENGTH
+import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.game.DigitFeedback
 import io.keval.apps.numbcrunch.domain.game.GuessEvaluation
 import io.keval.apps.numbcrunch.domain.game.GuessRules
@@ -75,6 +82,7 @@ import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.audio.GameSound
 import io.keval.apps.numbcrunch.gameplay.audio.LocalGameSoundPlayer
 import io.keval.apps.numbcrunch.gameplay.audio.digitKeyPitch
+import io.keval.apps.numbcrunch.gameplay.common.labelRes
 import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
 import io.keval.apps.numbcrunch.gameplay.navigation.GAMEPLAY_GUIDE_ENABLED
 import kotlinx.coroutines.delay
@@ -102,18 +110,21 @@ private val SwipeMaxShift = 48.dp
 private const val WIN_DIALOG_DELAY_MS = 1_100L
 private val MaxContentWidth = 520.dp
 private val DialogButtonHeight = 48.dp
+private val HintButtonWidth = 60.dp
+private val HintTargetHeight = 48.dp
 private val BoardOverlay = Color(0xA81A0B04)
 private val KeypadOverlay = Color(0x66140802)
 
 @Composable
 fun GameRoute(
     friendSecretNumber: String?,
+    difficulty: Difficulty,
     onExitToHome: () -> Unit,
     onHelp: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(friendSecretNumber))
+    val viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(friendSecretNumber, difficulty))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val requestExit = {
@@ -135,6 +146,7 @@ fun GameRoute(
         onDigit = viewModel::onDigit,
         onDelete = viewModel::onDelete,
         onEnter = viewModel::onEnter,
+        onHint = viewModel::onHint,
         onConfirmExit = {
             viewModel.onDismissExitConfirmation()
             onExitToHome()
@@ -160,6 +172,7 @@ fun GameScreen(
     onDigit: (Char) -> Unit,
     onDelete: () -> Unit,
     onEnter: () -> Unit,
+    onHint: (Int) -> Unit,
     onConfirmExit: () -> Unit,
     onDismissExit: () -> Unit,
     onPlayAgain: () -> Unit,
@@ -221,7 +234,30 @@ fun GameScreen(
                         ),
                         height = metrics.badgeHeight,
                     )
-                    Spacer(modifier = Modifier.weight(1f))
+                    Column(
+                        modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = stringResource(uiState.difficulty.labelRes),
+                            color = NumbCrunchGoldCream,
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        if (uiState.difficulty == Difficulty.MEDIUM) {
+                            Text(
+                                text = pluralStringResource(
+                                    R.plurals.game_hints_remaining,
+                                    uiState.hintsRemaining,
+                                    uiState.hintsRemaining,
+                                ),
+                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                                color = NumbCrunchGoldCream,
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
                     GamePillButton(
                         label = stringResource(R.string.quit_show),
                         contentDescription = stringResource(R.string.cd_quit_game),
@@ -233,6 +269,7 @@ fun GameScreen(
                 GuessBoard(
                     uiState = uiState,
                     onRemarkInfo = { remarkInfo = it },
+                    onHint = onHint,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
@@ -458,6 +495,7 @@ private fun Modifier.swipeToGoBack(
 private fun GuessBoard(
     uiState: GameUiState,
     onRemarkInfo: (GuessEvaluation) -> Unit,
+    onHint: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     WoodPanel(
@@ -472,13 +510,16 @@ private fun GuessBoard(
             contentAlignment = Alignment.TopCenter,
         ) {
             val baseGap = (maxWidth * 0.022f).coerceIn(4.dp, 10.dp)
-            val widthTile = (maxWidth - baseGap * ROW_GAP_COUNT) / ROW_UNITS
+            val showHintColumn = uiState.difficulty == Difficulty.MEDIUM
+            val hintSpace = if (showHintColumn) HintButtonWidth + baseGap else 0.dp
+            val widthTile = (maxWidth - baseGap * ROW_GAP_COUNT - hintSpace) / ROW_UNITS
             val heightTile = (maxHeight - baseGap * (MIN_VISIBLE_ROWS - 1)) / MIN_VISIBLE_ROWS
             val tile = minOf(widthTile, heightTile).coerceAtLeast(24.dp)
-            val rowWidth = tile * ROW_UNITS + baseGap * ROW_GAP_COUNT
-            val visibleRows = floor(((maxHeight + baseGap) / (tile + baseGap)).toDouble()).toInt().coerceAtLeast(1)
+            val rowWidth = tile * ROW_UNITS + baseGap * ROW_GAP_COUNT + hintSpace
+            val rowHeight = if (showHintColumn) tile.coerceAtLeast(HintTargetHeight) else tile
+            val visibleRows = floor(((maxHeight + baseGap) / (rowHeight + baseGap)).toDouble()).toInt().coerceAtLeast(1)
             val rowGap = if (visibleRows > 1) {
-                ((maxHeight - tile * visibleRows) / (visibleRows - 1)).coerceIn(baseGap, baseGap * 2.5f)
+                ((maxHeight - rowHeight * visibleRows) / (visibleRows - 1)).coerceIn(baseGap, baseGap * 2.5f)
             } else {
                 baseGap
             }
@@ -510,6 +551,7 @@ private fun GuessBoard(
                         tile = tile,
                         gap = baseGap,
                         onRemarkInfo = onRemarkInfo,
+                        onHint = onHint,
                     )
                 }
             }
@@ -525,9 +567,11 @@ private fun GuessRow(
     tile: Dp,
     gap: Dp,
     onRemarkInfo: (GuessEvaluation) -> Unit,
+    onHint: (Int) -> Unit,
 ) {
     val evaluation = uiState.guesses.getOrNull(index)
     val animateReveal = evaluation != null && uiState.lastRevealedIndex == index
+    val showsDigitFeedback = uiState.showsDigitFeedback(index)
     val rowDescription = when {
         evaluation != null -> stringResource(
             R.string.cd_guess_row,
@@ -556,7 +600,7 @@ private fun GuessRow(
                 size = tile,
                 isCursor = isActive && column == uiState.currentInput.length,
                 animateRevealDelayMs = if (animateReveal) column * TILE_REVEAL_STAGGER_MS else null,
-                colorFeedbackEnabled = false,
+                colorFeedbackEnabled = showsDigitFeedback,
             )
         }
         val infoInteraction = remember { MutableInteractionSource() }
@@ -600,6 +644,19 @@ private fun GuessRow(
                 if (evaluation != null) {
                     RemarkInfoIcon(size = tile * 0.42f, isPressed = infoPressed)
                 }
+            }
+        }
+        if (uiState.difficulty == Difficulty.MEDIUM) {
+            if (uiState.canUseHint(index)) {
+                GamePillButton(
+                    label = stringResource(R.string.game_hint),
+                    contentDescription = stringResource(R.string.cd_game_hint, index + 1),
+                    height = 24.dp,
+                    modifier = Modifier.width(HintButtonWidth),
+                    onClick = { onHint(index) },
+                )
+            } else {
+                Spacer(Modifier.size(HintButtonWidth, HintTargetHeight))
             }
         }
     }
@@ -920,6 +977,7 @@ private fun GameScreenPreviewContent(uiState: GameUiState) {
             onDigit = {},
             onDelete = {},
             onEnter = {},
+            onHint = {},
             onConfirmExit = {},
             onDismissExit = {},
             onPlayAgain = {},

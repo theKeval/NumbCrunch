@@ -2,6 +2,7 @@ package io.keval.apps.numbcrunch
 
 import android.content.Context
 import io.keval.apps.numbcrunch.data.di.RepositoryModule
+import io.keval.apps.numbcrunch.domain.repository.TutorialRepository
 import io.keval.apps.numbcrunch.domain.usecase.CompleteFirstRunTutorialUseCase
 import io.keval.apps.numbcrunch.domain.usecase.GetFriendSecretUseCase
 import io.keval.apps.numbcrunch.domain.usecase.GetWelcomeMessageUseCase
@@ -12,10 +13,12 @@ import io.keval.apps.numbcrunch.domain.usecase.SetMusicEnabledUseCase
 import io.keval.apps.numbcrunch.domain.usecase.SetSoundEffectsEnabledUseCase
 import io.keval.apps.numbcrunch.gameplay.audio.NumbCrunchAudio
 
-class AppContainer(context: Context) {
+class AppContainer(
+    context: Context,
+    tutorialRepository: TutorialRepository = RepositoryModule.createTutorialRepository(context),
+) {
     private val appInfoRepository = RepositoryModule.createAppInfoRepository()
     private val gameSessionRepository = RepositoryModule.createGameSessionRepository()
-    private val tutorialRepository = RepositoryModule.createTutorialRepository(context)
     private val settingsRepository = RepositoryModule.createSettingsRepository(context)
 
     val getWelcomeMessageUseCase: GetWelcomeMessageUseCase =

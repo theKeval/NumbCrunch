@@ -1,11 +1,13 @@
 package io.keval.apps.numbcrunch.gameplay.game
 
 import io.keval.apps.numbcrunch.domain.game.CODE_LENGTH
+import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.game.GuessEvaluation
 import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
 
 data class GameUiState(
     val playerMode: PlayerMode = PlayerMode.SINGLE,
+    val difficulty: Difficulty = Difficulty.HARD,
     val guesses: List<GuessEvaluation> = emptyList(),
     val currentInput: String = "",
     val isWon: Boolean = false,
@@ -18,10 +20,24 @@ data class GameUiState(
     val showWinDialog: Boolean = false,
     /** Index of the guess evaluated during this session, used to animate its reveal once. */
     val lastRevealedIndex: Int? = null,
+    /** A nonnull index records a spent hint, even if its restored row is unavailable. */
+    val hintedGuessIndex: Int? = null,
 ) {
     val isRoundOver: Boolean get() = isWon || isGivenUp
     val canEnter: Boolean get() = !isRoundOver && currentInput.length == CODE_LENGTH
     val canDelete: Boolean get() = !isRoundOver && currentInput.isNotEmpty()
+
+    val hintsRemaining: Int
+        get() = if (difficulty == Difficulty.MEDIUM && !isRoundOver && hintedGuessIndex == null) 1 else 0
+
+    internal fun canUseHint(guessIndex: Int): Boolean = hintsRemaining > 0 && guessIndex in guesses.indices
+
+    internal fun showsDigitFeedback(guessIndex: Int): Boolean =
+        guessIndex in guesses.indices && when (difficulty) {
+            Difficulty.EASY -> true
+            Difficulty.MEDIUM -> hintedGuessIndex == guessIndex
+            Difficulty.HARD -> false
+        }
 
     fun isDigitEnabled(digit: Char): Boolean {
         return !isRoundOver && currentInput.length < CODE_LENGTH && digit !in currentInput

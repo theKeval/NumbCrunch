@@ -11,7 +11,7 @@ class DigitTileBrushTest {
     private val grayBrush = digitTileBrush(
         TileState.Revealed('3', DigitFeedback.ABSENT),
         showFront = false,
-        colorFeedbackEnabled = true,
+        colorFeedbackEnabled = false,
     )
 
     @Test
@@ -40,6 +40,7 @@ class DigitTileBrushTest {
             assertSame(neutralBrush, digitTileBrush(state, showFront = true, colorFeedbackEnabled = true))
             digitTileBrush(state, showFront = false, colorFeedbackEnabled = true).also {
                 assertNotSame(neutralBrush, it)
+                assertNotSame(grayBrush, it)
             }
         }
         assertNotSame(revealedBrushes[0], revealedBrushes[1])
