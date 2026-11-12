@@ -206,7 +206,7 @@ internal fun GuideHeading(text: String, modifier: Modifier = Modifier) {
 }
 
 private val ClueRightColor = Color(0xFF8EE06A)
-private val ClueWrongColor = Color(0xFFF3C541)
+private val ClueWrongColor = NumbCrunchOrangeTop
 private val ClueSmyleColor = Color(0xFF4FD1C5)
 private val ClueSmyleMeaningColor = Color(0xFFFFD43B)
 private val DetailsGoalColor = Color(0xFFFFD36B)
@@ -245,7 +245,7 @@ private fun highlight(text: String, styles: List<Pair<Regex, SpanStyle>>): Annot
 
 /**
  * Makes the clue words stand out in bold: RIGHT, 1R and 2R in green; WRONG, 1W, 2W and 3W in
- * yellow; SMYLE in teal and "Simply Make Your Life Easy" in yellow. Only styling is added; the
+ * orange; SMYLE in teal and "Simply Make Your Life Easy" in yellow. Only styling is added; the
  * text is unchanged.
  */
 internal fun highlightClueWords(text: String): AnnotatedString = highlight(text, ClueWordStyles)

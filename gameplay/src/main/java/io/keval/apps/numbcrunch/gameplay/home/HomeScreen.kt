@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,6 +55,7 @@ import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchChocolateDark
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldBorder
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchTheme
+import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOrangeTop
 import io.keval.apps.numbcrunch.domain.game.CODE_LENGTH
 import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.usecase.GetWelcomeMessageUseCase
@@ -398,7 +400,9 @@ private fun DifficultySelector(
     ) {
         Text(
             text = stringResource(R.string.difficulty_label),
-            color = NumbCrunchGoldCream,
+            color = NumbCrunchOrangeTop,
+            fontFamily = FontFamily.Serif,
+            fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.labelLarge,
         )
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -426,7 +430,9 @@ private fun DifficultySelector(
                 },
             ),
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            color = NumbCrunchGoldCream,
+            color = NumbCrunchGoldBorder,
+            fontFamily = FontFamily.Serif,
+            fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodySmall,
         )

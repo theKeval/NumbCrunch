@@ -7,7 +7,4 @@
     <string name="difficulty_easy_description">Color clues for every guess</string>
     <string name="difficulty_medium_description">One hint per round</string>
     <string name="difficulty_hard_description">Remarks only</string>
-    <string name="difficulty_exact_marker" translatable="false">R</string>
-    <string name="difficulty_close_marker" translatable="false">W</string>
-    <string name="difficulty_absent_marker" translatable="false">×</string>
 </resources>

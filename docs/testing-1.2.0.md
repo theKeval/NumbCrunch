@@ -1,8 +1,10 @@
 # NumbCrunch 1.2.0 device acceptance
 
 This checklist is for the debug build (`io.keval.apps.numbcrunch.debug`), which
-installs beside the Play app. Automated checks and their results are recorded
-in Jira GUESSER-8. These device checks are not claimed as executed by the agent.
+installs beside the Play app. Jira GUESSER-8 records 53 passing JVM tests and
+10 passing Android tests on the OnePlus 7T, plus visual Home/Easy/Medium checks.
+The full manual checklist below still needs acceptance, especially TalkBack,
+large fonts and real Android process recreation.
 
 ## First launch
 
@@ -22,8 +24,8 @@ feedback reproducible: choose secret `573`, then submit guess `527`.
 
 | Difficulty | Expected result for `527` |
 | --- | --- |
-| Easy | Green/R, red/×, yellow/W; remark `1R, 1W` |
-| Medium | Neutral tiles until Hint is used on this row, then green/R, red/×, yellow/W |
+| Easy | Green, red, orange; remark `1R, 1W` |
+| Medium | Neutral tiles until the lightbulb Hint is used on this row, then green, red, orange |
 | Hard | Neutral tiles and remark `1R, 1W`; no hint action |
 
 - Before pressing Enter, all typed digits must remain neutral.
@@ -42,11 +44,13 @@ feedback reproducible: choose secret `573`, then submit guess `527`.
 
 - Open Game Play from both Home and the in-game help button. Check the worked
   examples, feedback legend, mode comparison and one-hint explanation.
+- In Medium, the lightbulb Hint replaces the info icon; digit and remark boxes
+  stay the same size as Easy/Hard. Tap the remark to open its explanation.
 - With TalkBack, reach each Medium Hint control separately from remark help.
   Hard and unrevealed Medium must not announce per-digit answers.
 - Check a compact phone and large system font size. No clipped controls or
   overlapping hint/remark targets; guide and Welcome remain scrollable.
-- Verify feedback can be distinguished without color alone, sound settings
+- Verify spoken feedback describes each revealed tile, sound settings
   still apply, and the game remains usable offline.
 
 ## Release boundary

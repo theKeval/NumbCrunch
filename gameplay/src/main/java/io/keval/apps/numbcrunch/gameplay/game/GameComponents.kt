@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -90,7 +89,7 @@ internal val GoldFrameBrush = Brush.verticalGradient(listOf(NumbCrunchGoldBorder
 private val TileEmptyBrush = Brush.verticalGradient(listOf(Color(0xFFE2BC86), Color(0xFFCD9D62), Color(0xFFBE8A50)))
 private val TileNeutralBrush = Brush.verticalGradient(listOf(Color(0xFF7A746E), Color(0xFF5E5853), Color(0xFF48433F)))
 private val TileExactBrush = Brush.verticalGradient(listOf(Color(0xFF427F28), Color(0xFF326E21), Color(0xFF285A1B)))
-private val TileCloseBrush = Brush.verticalGradient(listOf(Color(0xFFFFE381), Color(0xFFF3C541), Color(0xFFD8A929)))
+private val TileCloseBrush = Brush.verticalGradient(listOf(Color(0xFFFFB55C), Color(0xFFF59A31), Color(0xFFE58C26)))
 private val TileAbsentBrush = Brush.verticalGradient(listOf(Color(0xFFB83B3C), Color(0xFFA12C32), Color(0xFF862329)))
 private val KeyAmberBrush = Brush.verticalGradient(listOf(NumbCrunchOrangeTop, NumbCrunchOrangeMid, NumbCrunchOrangeBottom))
 private val KeyDeleteBrush = Brush.verticalGradient(listOf(Color(0xFFF2734F), Color(0xFFD9472A), Color(0xFFB2301A)))
@@ -358,8 +357,8 @@ fun DigitTile(
     }
 
     val brush = digitTileBrush(state, showFront, colorFeedbackEnabled)
-    val feedback = (state as? TileState.Revealed)?.takeIf { !showFront && colorFeedbackEnabled }
-    val digitClue = feedback?.let { digitFeedbackDescription(it.digit, it.feedback) }
+    val revealedTile = (state as? TileState.Revealed)?.takeIf { !showFront && colorFeedbackEnabled }
+    val digitClue = revealedTile?.let { digitFeedbackDescription(it.digit, it.feedback) }
     val digit = when (state) {
         TileState.Empty -> null
         is TileState.Pending -> state.digit
@@ -369,7 +368,7 @@ fun DigitTile(
         isCursor -> NumbCrunchOrangeTop
         else -> Color(0x99331A0A)
     }
-    val light = !showFront && feedback?.feedback != DigitFeedback.CLOSE
+    val light = !showFront && revealedTile?.feedback != DigitFeedback.CLOSE
     val digitColor = if (light) LightDigitColor else DarkDigitColor
 
     Box(
@@ -409,31 +408,12 @@ fun DigitTile(
         if (digit != null) {
             Text(
                 text = digit.toString(),
-                modifier = if (feedback != null) Modifier.offset(x = size * -0.12f, y = size * 0.12f) else Modifier,
                 style = TextStyle(
                     color = digitColor,
                     fontFamily = FontFamily.Serif,
                     fontWeight = FontWeight.Black,
-                    fontSize = with(LocalDensity.current) { (size * if (feedback == null) 0.56f else 0.50f).toSp() },
+                    fontSize = with(LocalDensity.current) { (size * 0.56f).toSp() },
                     shadow = if (light) DigitShadow else null,
-                ),
-            )
-        }
-        if (feedback != null) {
-            Text(
-                text = stringResource(
-                    when (feedback.feedback) {
-                        DigitFeedback.EXACT -> R.string.difficulty_exact_marker
-                        DigitFeedback.CLOSE -> R.string.difficulty_close_marker
-                        DigitFeedback.ABSENT -> R.string.difficulty_absent_marker
-                    },
-                ),
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = size * 0.06f, end = size * 0.10f),
-                style = TextStyle(
-                    color = digitColor,
-                    fontWeight = FontWeight.Black,
-                    fontSize = with(LocalDensity.current) { (size * 0.35f).coerceAtLeast(9.dp).toSp() },
-                    platformStyle = PlatformTextStyle(includeFontPadding = false),
                 ),
             )
         }

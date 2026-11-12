@@ -8,11 +8,14 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
 ## 1.2.0 (versionCode 4) — unreleased
 
 - Add Easy, Medium and Hard difficulty selection with round restoration.
-- Easy reveals green/yellow/red feedback after each submitted guess; Medium
+- Easy reveals green/orange/red feedback after each submitted guess; Medium
   provides one hint per round to reveal one submitted guess; Hard keeps remarks only.
 - Restore Game Play from Home and in-game help with difficulty explanations
   and worked examples, while preserving the interactive Tutorial.
 - Introduce a first-launch Welcome with Tutorial and Home choices.
+- Refine feedback to centered, color-only digits with orange misplaced clues;
+  Medium uses the info slot for Hint, preserving full-size guesses and tappable
+  remarks. Difficulty labels use the warm gold game styling.
 
 ## 1.1.0 (versionCode 3) — internal and closed testing
 

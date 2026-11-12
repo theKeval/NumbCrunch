@@ -51,7 +51,7 @@ The choice is shown in Game and cannot change during that round. Single Player
 **PLAY AGAIN** retains it. A restored round from an older version without saved
 difficulty uses Hard, and a game opened from the manual tutorial also uses Hard.
 
-- Easy: each submitted guess reveals green for an exact position, yellow for
+- Easy: each submitted guess reveals green for an exact position, orange for
   a digit elsewhere in the secret, and red for an absent digit.
 - Medium: one hint per round reveals all three tiles of one submitted guess.
   That row stays revealed; other rows stay gray. Repeated identical guesses

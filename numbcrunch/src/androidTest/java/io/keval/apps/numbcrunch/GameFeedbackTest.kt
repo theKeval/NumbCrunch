@@ -1,21 +1,33 @@
 package io.keval.apps.numbcrunch
 
 import android.content.Context
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchTheme
 import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.game.GameRoute
+import io.keval.apps.numbcrunch.gameplay.game.GameScreen
+import io.keval.apps.numbcrunch.gameplay.game.GameUiState
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -42,6 +54,7 @@ class GameFeedbackTest {
             compose.onNodeWithContentDescription(rowDescription(1))
                 .assert(hasContentDescription(description))
         }
+        assertNoTileMarkers()
     }
 
     @Test
@@ -62,18 +75,70 @@ class GameFeedbackTest {
         submitGuess()
         submitGuess()
         assertClueCount(0)
+        compose.onNodeWithText("i", useUnmergedTree = true).assertDoesNotExist()
 
-        compose.onNodeWithContentDescription(context.getString(R.string.cd_game_hint, 2)).performClick()
+        val remark = context.getString(R.string.cd_remark_info, "1R, 1W")
+        compose.onAllNodesWithContentDescription(remark)[1].performTouchInput { click() }
+        val dismiss = compose.onNodeWithContentDescription(context.getString(R.string.remark_info_dismiss))
+        dismiss.assertIsDisplayed().performClick()
+        assertClueCount(0)
+        compose.onNodeWithText(context.resources.getQuantityString(R.plurals.game_hints_remaining, 1, 1))
+            .assertIsDisplayed()
+
+        compose.onNodeWithContentDescription(context.getString(R.string.cd_game_hint, 2))
+            .performTouchInput { click() }
 
         awaitClueCount(1)
         assertSecondRowOnly()
         assertNoHintActions()
+        assertNoTileMarkers()
 
         restoration.emulateSavedInstanceStateRestore()
 
         awaitClueCount(1)
         assertSecondRowOnly()
         assertNoHintActions()
+    }
+
+    @Test
+    fun mediumKeepsTheSameDigitAndRowSizesAsEasyAndHard() {
+        val difficulty = mutableStateOf(Difficulty.EASY)
+        compose.setContent {
+            NumbCrunchTheme {
+                Box(Modifier.width(320.dp)) {
+                    GameScreen(
+                        uiState = GameUiState(difficulty = difficulty.value, currentInput = "527"),
+                        onBack = {},
+                        onHelp = {},
+                        onSettings = {},
+                        onQuit = {},
+                        onConfirmQuit = {},
+                        onDismissQuit = {},
+                        onQuitRevealDone = {},
+                        onDigit = {},
+                        onDelete = {},
+                        onEnter = {},
+                        onHint = {},
+                        onConfirmExit = {},
+                        onDismissExit = {},
+                        onPlayAgain = {},
+                        onWinHome = {},
+                        onDismissWinDialog = {},
+                    )
+                }
+            }
+        }
+
+        val activeRow = hasContentDescription(context.getString(R.string.cd_active_row, 1, "5 2 7"))
+        val digit = hasText("5") and hasAnyAncestor(activeRow)
+        val easyDigit = compose.onNode(digit, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.size
+        val easyRow = compose.onNode(activeRow).fetchSemanticsNode().boundsInRoot.size
+
+        for (mode in listOf(Difficulty.MEDIUM, Difficulty.HARD)) {
+            compose.runOnIdle { difficulty.value = mode }
+            assertEquals(easyDigit, compose.onNode(digit, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.size)
+            assertEquals(easyRow, compose.onNode(activeRow).fetchSemanticsNode().boundsInRoot.size)
+        }
     }
 
     private fun launch(difficulty: Difficulty): StateRestorationTester =
@@ -138,9 +203,16 @@ class GameFeedbackTest {
     }
 
     private fun assertNoHintActions() {
+        compose.onNodeWithText("i", useUnmergedTree = true).assertDoesNotExist()
         listOf(1, 2).forEach { row ->
             compose.onAllNodesWithContentDescription(context.getString(R.string.cd_game_hint, row))
                 .assertCountEquals(0)
+        }
+    }
+
+    private fun assertNoTileMarkers() {
+        listOf("R", "W", "×").forEach { marker ->
+            compose.onNodeWithText(marker, useUnmergedTree = true).assertDoesNotExist()
         }
     }
 }

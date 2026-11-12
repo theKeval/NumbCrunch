@@ -37,7 +37,7 @@ Home**. Tutorial is a three-step swipeable walkthrough with a separate practice
 keypad and remains available from Home afterward.
 Gameplay explains rules with scored tile examples, modes, controls, and tips.
 New Home selections default to Easy; older restored rounds remain Hard.
-Easy reveals green/yellow/red feedback after submission. Medium offers one hint
+Easy reveals green/orange/red feedback after submission. Medium offers one hint
 per round to reveal one chosen submitted guess, while Hard keeps neutral tiles
 and aggregate remarks. Game Play explains these rules and can be opened from
 Home or in-game help without losing the round.

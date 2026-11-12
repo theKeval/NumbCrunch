@@ -100,11 +100,11 @@
     <string name="rules_clues_title_main_4">When ALL 3 digits in the attempted guess are absent in the hidden number, the player is rewarded with SMYLE, \"Simply Make Your Life Easy\", and ignore these 3 digits in your next guess.</string>
     <string name="rules_smyle_body">SMYLE means none of your digits are in the secret. It stands for Simply Make Your Life Easy: three digits you can rule out!</string>
     <string name="rules_difficulty_body">Choose a difficulty on Home before you start. Each difficulty works with both player modes.</string>
-    <string name="rules_easy_body">Easy\nEvery submitted guess shows a clue on all three tiles using colors and marks.</string>
-    <string name="rules_medium_body">Medium\nSubmitted tiles start gray. During the round, tap Hint beside a submitted guess to reveal the colors and marks on all three tiles in that row. You get one hint per round, and the other rows stay gray.</string>
+    <string name="rules_easy_body">Easy\nEvery submitted guess shows a clue on all three tiles using colors.</string>
+    <string name="rules_medium_body">Medium\nSubmitted tiles start gray. During the round, tap the lightbulb Hint button beside a submitted guess to reveal the colors on all three tiles in that row. You get one hint per round, and the other rows stay gray.</string>
     <string name="rules_hard_body">Hard\nAll submitted tiles stay gray. Use the remarks to work out which digits match.</string>
     <string name="rules_examples_title">Tile colors and examples</string>
-    <string name="rules_tile_colors">Green tiles show R for a digit in the right place.\nYellow tiles show W for a digit that belongs in another place.\nRed tiles show a cross (×) for a digit absent from the secret.\nUnmarked gray tiles keep individual clues hidden. Use the remark for the row.</string>
+    <string name="rules_tile_colors">Green tiles mean a digit is in the right place.\nOrange tiles mean a digit belongs in another place.\nRed tiles mean a digit is absent from the secret.\nGray tiles keep individual clues hidden. Use the remark for the row.</string>
     <string name="rules_example_secret">The secret in these examples is %1$s.</string>
     <string name="example_mixed">5 is correct in the last place. 2 belongs elsewhere. 3 is not in the secret.</string>
     <string name="example_hard">Here is the first guess again in Hard. All three tiles stay gray.</string>

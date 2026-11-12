@@ -156,7 +156,7 @@ the round is won. The repository is process-memory only.
 - `GameComponents` provides the `WoodPanel` (gold frame over a cropped wood
   texture), `DigitTile` with a staggered flip reveal, `RemarkBox`, `KeypadKey`,
   and `NumbCrunchDialogFrame`. These reuse the Home palette.
-  `DigitTile` uses green/yellow/red for exact/misplaced/absent feedback.
+  `DigitTile` uses green/orange/red for exact/misplaced/absent feedback.
   Neutral analyzed tiles stay gray, while pending tiles and keypad styling
   retain their original brushes. Game reveals per-digit feedback only for
   Easy rows and the redeemed Medium row; spoken feedback uses the same gate.
@@ -164,9 +164,9 @@ the round is won. The repository is process-memory only.
   `animateHeartbeat` (set for the just-revealed row) it scales through a
   one-time "lub-dub" pulse. `RemarkInfoIcon` trims font padding so the "i"
   is optically centered.
-- `RemarkInfoIcon` sits in a reserved `INFO_UNITS` column beside each
-  remark. The remark box and icon share one clickable row (well above the
-  48 dp minimum touch target). While the popup is open, the game content uses
+- `RemarkInfoIcon` sits beside each remark in Easy and Hard. Medium replaces
+  that icon with a separately accessible Hint control, preserving the original
+  tile and remark sizes. The remark itself still opens its explanation. While the popup is open, the game content uses
   `clearAndSetSemantics {}` so accessibility services see only the popup,
   which is announced through `paneTitle`. `GameScreen` holds the selected `GuessEvaluation` and shows
   `RemarkInfoPopup`, an in-window overlay animated with `AnimatedVisibility`
