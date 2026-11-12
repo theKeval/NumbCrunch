@@ -56,6 +56,14 @@ incrementally rewriting V1. It:
 
 ## Current Baseline
 
+The 1.2.0 sprint adds Easy/Medium/Hard setup and immutable round difficulty,
+a first-run Welcome using the existing onboarding preference, and an expanded
+Game Play guide. Easy provides automatic submitted-tile feedback; Medium
+provides one hint for one submitted row per round; Hard preserves neutral tiles
+and aggregate remarks. New Home selections default to Easy, while legacy
+restored rounds and manual tutorial games use Hard. Hint use survives Android
+round restoration, and the Tutorial keeps its existing neutral practice flow.
+
 The primary revamp now includes a playable game. Its Home screen, setup
 handoff, and Game screen are implemented. Tutorial, Gameplay, and About now
 provide resource-backed learning, rules, and project content in the game theme.

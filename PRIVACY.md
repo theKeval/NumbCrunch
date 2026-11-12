@@ -36,11 +36,15 @@ To work as a game, NumbCrunch keeps a small amount of information on your
 device. We cannot see or access any of it.
 
 - **Settings:** whether background music and sound effects are turned on.
-- **Tutorial progress:** whether you have completed the first-launch tutorial.
-- **The current round:** the hidden number, your guesses, and the game mode are
-  kept while a round is in progress, so Android can restore the round if it
-  closes the app in the background. In Double Player mode, the number your
-  friend hides is held only in the app's memory and is lost when the app closes.
+- **Game setup:** your selected difficulty, so Android can restore the Home
+  screen after closing the app in the background.
+- **First-launch progress:** whether you have completed or skipped the first-launch
+  introduction and tutorial.
+- **The current round:** the hidden number, your guesses, the player mode,
+  difficulty, and which guess used the Medium hint are kept while a round is
+  in progress, so Android can restore the round without restoring a spent hint
+  if it closes the app in the background. This also includes the hidden number
+  in Double Player mode.
 
 You can delete all of this at any time by clearing the app's storage in your
 device's settings or by uninstalling the app.

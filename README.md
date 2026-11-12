@@ -20,10 +20,11 @@ debug builds install separately as `io.keval.apps.numbcrunch.debug`
 - a responsive, scrollable, portrait-first Jetpack Compose home screen;
 - Compose-drawn, resolution-independent controls for Single Player and Double
   Player modes;
+- an independent Easy/Medium/Hard difficulty selection, saved with each round;
 - a masked Double Player secret field with three-unique-digit validation;
 - in-memory handoff of a valid friend secret to the Game destination;
 - a playable Game screen with a custom keypad, scrollable guess board,
-  uniformly gray digit tiles with a staggered flip reveal,
+  difficulty-aware digit tiles with a staggered flip reveal,
   V1-style `R`/`W`/`SMYLE`/`Winner` remarks,
   quit confirmation, win dialog, and a help button that opens Gameplay while
   preserving the round;
@@ -31,16 +32,20 @@ debug builds install separately as `io.keval.apps.numbcrunch.debug`
 - a shared wood-background scaffold, back control, and Compose theme;
 - clean module boundaries for UI, domain contracts, data, and app assembly.
 
-Tutorial is a three-step swipeable walkthrough with a separate practice keypad;
-it appears on first launch and remains available from Home afterward.
+First launch offers a wooden Welcome screen with **View tutorial** and **Go to
+Home**. Tutorial is a three-step swipeable walkthrough with a separate practice
+keypad and remains available from Home afterward.
 Gameplay explains rules with scored tile examples, modes, controls, and tips.
-Game-board color feedback is currently disabled to increase difficulty;
-the original green/orange/gray feedback remains available in learning examples.
+New Home selections default to Easy; older restored rounds remain Hard.
+Easy reveals green/orange/red feedback after submission. Medium offers one hint
+per round to reveal one chosen submitted guess, while Hard keeps neutral tiles
+and aggregate remarks. Game Play explains these rules and can be opened from
+Home or in-game help without losing the round.
 About presents NumbCrunch's family origin story, credits, installed version, and
 a Privacy policy button that opens the full policy inside the game; nothing in
 the app links out to a website. All three reuse the wooden game theme.
-The new app does **not yet implement sound, vibration settings, profiles, or
-scoreboards**.
+The new app includes music and sound-effect settings, but does **not yet
+implement vibration settings, in-game profiles, or scoreboards**.
 
 ## Game Rules
 
@@ -96,8 +101,10 @@ See the [architecture guide](docs/architecture.md) and
 - JUnit 4 tests
 
 Gameplay works offline and without an account. Google Play Games Services
-can authenticate players with an existing profile at launch. Double Player
-secrets are held only in memory and are lost when the application process ends.
+can authenticate players with an existing profile at launch. Friend secrets
+are handed to Game in memory. Once a round starts, Android saved state can
+restore its secret, guesses, difficulty and hint use after background process
+recreation.
 
 ## Build and Test
 

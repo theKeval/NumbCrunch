@@ -1,6 +1,7 @@
 package io.keval.apps.numbcrunch.gameplay.home
 
 import io.keval.apps.numbcrunch.domain.game.CODE_LENGTH
+import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.game.isCodeDigit
 
 enum class PlayerMode {
@@ -10,6 +11,7 @@ enum class PlayerMode {
 
 data class HomeUiState(
     val playerMode: PlayerMode = PlayerMode.SINGLE,
+    val difficulty: Difficulty = Difficulty.EASY,
     val friendSecretNumber: String = "",
     val secretValidationMessage: String? = null,
 )

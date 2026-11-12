@@ -124,8 +124,10 @@ startup and suppresses automatic prompts to create a Play Games profile.
 
 ### State and Persistence
 
-The current friend secret is process-memory only. Before introducing
-persistence, define:
+The friend-secret setup handoff is process-memory only. Once Game starts, its
+secret and round state use `SavedStateHandle`, including difficulty and Medium
+hint use. This supports Android background recreation, not a persistent saved-game
+database. Before adding further persistence, define:
 
 - whether a secret survives process death;
 - when it is consumed or cleared;

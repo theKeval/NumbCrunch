@@ -25,7 +25,18 @@ fun GameplayInfoScreen(
             GuideBody(stringResource(R.string.rules_clues_body))
             GuideBody(stringResource(R.string.rules_smyle_body))
         }
+        GuidePanel(stringResource(R.string.rules_modes_title)) {
+            GuideBody(stringResource(R.string.rules_single_body))
+            GuideBody(stringResource(R.string.rules_double_body))
+        }
+        GuidePanel(stringResource(R.string.difficulty_label)) {
+            GuideBody(stringResource(R.string.rules_difficulty_body))
+            GuideBody(stringResource(R.string.rules_easy_body))
+            GuideBody(stringResource(R.string.rules_medium_body))
+            GuideBody(stringResource(R.string.rules_hard_body))
+        }
         GuidePanel(stringResource(R.string.rules_examples_title)) {
+            GuideBody(stringResource(R.string.rules_tile_colors))
             GuideBody(stringResource(R.string.rules_example_secret, LearningExamples.SECRET))
             val explanations = listOf(
                 R.string.example_mixed, R.string.example_rearranged,
@@ -35,10 +46,8 @@ fun GameplayInfoScreen(
                 GuideGuess(evaluation)
                 GuideBody(stringResource(explanations[index]))
             }
-        }
-        GuidePanel(stringResource(R.string.rules_modes_title)) {
-            GuideBody(stringResource(R.string.rules_single_body))
-            GuideBody(stringResource(R.string.rules_double_body))
+            GuideBody(stringResource(R.string.example_hard))
+            GuideGuess(LearningExamples.evaluations.first(), colorFeedbackEnabled = false)
         }
         GuidePanel(stringResource(R.string.rules_controls_title)) {
             GuideBody(stringResource(R.string.rules_controls_body))

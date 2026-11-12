@@ -34,6 +34,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,10 +59,15 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -66,8 +75,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldBorder
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchTheme
+import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOrangeTop
 import io.keval.apps.numbcrunch.domain.game.CODE_LENGTH
+import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.game.DigitFeedback
 import io.keval.apps.numbcrunch.domain.game.GuessEvaluation
 import io.keval.apps.numbcrunch.domain.game.GuessRules
@@ -75,6 +87,8 @@ import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.audio.GameSound
 import io.keval.apps.numbcrunch.gameplay.audio.LocalGameSoundPlayer
 import io.keval.apps.numbcrunch.gameplay.audio.digitKeyPitch
+import io.keval.apps.numbcrunch.gameplay.audio.rememberTapFeedback
+import io.keval.apps.numbcrunch.gameplay.common.labelRes
 import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
 import io.keval.apps.numbcrunch.gameplay.navigation.GAMEPLAY_GUIDE_ENABLED
 import kotlinx.coroutines.delay
@@ -108,12 +122,13 @@ private val KeypadOverlay = Color(0x66140802)
 @Composable
 fun GameRoute(
     friendSecretNumber: String?,
+    difficulty: Difficulty,
     onExitToHome: () -> Unit,
     onHelp: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(friendSecretNumber))
+    val viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(friendSecretNumber, difficulty))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val requestExit = {
@@ -135,6 +150,7 @@ fun GameRoute(
         onDigit = viewModel::onDigit,
         onDelete = viewModel::onDelete,
         onEnter = viewModel::onEnter,
+        onHint = viewModel::onHint,
         onConfirmExit = {
             viewModel.onDismissExitConfirmation()
             onExitToHome()
@@ -160,6 +176,7 @@ fun GameScreen(
     onDigit: (Char) -> Unit,
     onDelete: () -> Unit,
     onEnter: () -> Unit,
+    onHint: (Int) -> Unit,
     onConfirmExit: () -> Unit,
     onDismissExit: () -> Unit,
     onPlayAgain: () -> Unit,
@@ -221,7 +238,34 @@ fun GameScreen(
                         ),
                         height = metrics.badgeHeight,
                     )
-                    Spacer(modifier = Modifier.weight(1f))
+                    Column(
+                        modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = stringResource(uiState.difficulty.labelRes),
+                            color = NumbCrunchOrangeTop,
+                            fontFamily = FontFamily.Serif,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        if (uiState.difficulty == Difficulty.MEDIUM) {
+                            Text(
+                                text = pluralStringResource(
+                                    R.plurals.game_hints_remaining,
+                                    uiState.hintsRemaining,
+                                    uiState.hintsRemaining,
+                                ),
+                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                                color = NumbCrunchGoldBorder,
+                                fontFamily = FontFamily.Serif,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
                     GamePillButton(
                         label = stringResource(R.string.quit_show),
                         contentDescription = stringResource(R.string.cd_quit_game),
@@ -233,6 +277,7 @@ fun GameScreen(
                 GuessBoard(
                     uiState = uiState,
                     onRemarkInfo = { remarkInfo = it },
+                    onHint = onHint,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
@@ -458,6 +503,7 @@ private fun Modifier.swipeToGoBack(
 private fun GuessBoard(
     uiState: GameUiState,
     onRemarkInfo: (GuessEvaluation) -> Unit,
+    onHint: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     WoodPanel(
@@ -510,6 +556,7 @@ private fun GuessBoard(
                         tile = tile,
                         gap = baseGap,
                         onRemarkInfo = onRemarkInfo,
+                        onHint = onHint,
                     )
                 }
             }
@@ -525,9 +572,11 @@ private fun GuessRow(
     tile: Dp,
     gap: Dp,
     onRemarkInfo: (GuessEvaluation) -> Unit,
+    onHint: (Int) -> Unit,
 ) {
     val evaluation = uiState.guesses.getOrNull(index)
     val animateReveal = evaluation != null && uiState.lastRevealedIndex == index
+    val showsDigitFeedback = uiState.showsDigitFeedback(index)
     val rowDescription = when {
         evaluation != null -> stringResource(
             R.string.cd_guess_row,
@@ -556,48 +605,73 @@ private fun GuessRow(
                 size = tile,
                 isCursor = isActive && column == uiState.currentInput.length,
                 animateRevealDelayMs = if (animateReveal) column * TILE_REVEAL_STAGGER_MS else null,
-                colorFeedbackEnabled = false,
+                colorFeedbackEnabled = showsDigitFeedback,
             )
         }
         val infoInteraction = remember { MutableInteractionSource() }
         val infoPressed by infoInteraction.collectIsPressedAsState()
-        val infoDescription = evaluation?.let { stringResource(R.string.cd_remark_info, it.remark) }
-        // The remark box and the "i" share one tap target (>= 48 dp wide) that opens the popup.
+        val isMedium = uiState.difficulty == Difficulty.MEDIUM
+        val remarkAction = if (evaluation != null) {
+            val description = stringResource(R.string.cd_remark_info, evaluation.remark)
+            Modifier.clickable(
+                interactionSource = infoInteraction,
+                indication = null,
+                role = Role.Button,
+                onClick = { onRemarkInfo(evaluation) },
+            ).semantics { contentDescription = description }
+        } else {
+            Modifier
+        }
+        val canUseHint = uiState.canUseHint(index)
+        val hintAction = if (canUseHint) {
+            val description = stringResource(R.string.cd_game_hint, index + 1)
+            val feedback = rememberTapFeedback()
+            Modifier.clickable(role = Role.Button) {
+                feedback()
+                onHint(index)
+            }.semantics { contentDescription = description }
+        } else {
+            Modifier
+        }
+        // Medium reserves the original info slot for a separate action beside the remark.
         Row(
             modifier = Modifier
                 .height(tile)
-                .then(
-                    if (evaluation != null && infoDescription != null) {
-                        Modifier
-                            .clickable(
-                                interactionSource = infoInteraction,
-                                indication = null,
-                                role = Role.Button,
-                                onClick = { onRemarkInfo(evaluation) },
-                            )
-                            .semantics { contentDescription = infoDescription }
-                    } else {
-                        Modifier
-                    },
-                ),
+                .then(if (isMedium) Modifier else remarkAction),
             horizontalArrangement = Arrangement.spacedBy(gap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            RemarkBox(
-                remark = evaluation?.remark,
-                isWinner = evaluation?.isWin == true,
-                height = tile * 0.74f,
-                modifier = Modifier.width(tile * REMARK_UNITS),
-                animateReveal = animateReveal,
-                revealDelayMs = REMARK_REVEAL_DELAY_MS,
-            )
+            Box(
+                modifier = Modifier
+                    .width(tile * REMARK_UNITS)
+                    .fillMaxHeight()
+                    .then(if (isMedium) remarkAction else Modifier),
+                contentAlignment = Alignment.Center,
+            ) {
+                RemarkBox(
+                    remark = evaluation?.remark,
+                    isWinner = evaluation?.isWin == true,
+                    height = tile * 0.74f,
+                    modifier = Modifier.fillMaxWidth(),
+                    animateReveal = animateReveal,
+                    revealDelayMs = REMARK_REVEAL_DELAY_MS,
+                )
+            }
             Box(
                 modifier = Modifier
                     .width(tile * INFO_UNITS)
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    .then(hintAction),
                 contentAlignment = Alignment.Center,
             ) {
-                if (evaluation != null) {
+                if (canUseHint) {
+                    Icon(
+                        imageVector = Icons.Outlined.Lightbulb,
+                        contentDescription = null,
+                        tint = NumbCrunchGoldBorder,
+                        modifier = Modifier.size(tile * 0.46f),
+                    )
+                } else if (!isMedium && evaluation != null) {
                     RemarkInfoIcon(size = tile * 0.42f, isPressed = infoPressed)
                 }
             }
@@ -920,6 +994,7 @@ private fun GameScreenPreviewContent(uiState: GameUiState) {
             onDigit = {},
             onDelete = {},
             onEnter = {},
+            onHint = {},
             onConfirmExit = {},
             onDismissExit = {},
             onPlayAgain = {},
