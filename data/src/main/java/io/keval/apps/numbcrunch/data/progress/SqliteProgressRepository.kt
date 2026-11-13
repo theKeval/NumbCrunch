@@ -209,6 +209,10 @@ class SqliteProgressRepository(
     }
 
     override suspend fun importResolvedProgress(accountPlayerId: String, progress: CloudProgress, selectedRoundId: String?) {
+        importAndStamp(accountPlayerId, progress, selectedRoundId)
+    }
+
+    override suspend fun importAndStamp(accountPlayerId: String, progress: CloudProgress, selectedRoundId: String?): String =
         transaction { db ->
             val local = exportCloud(db, accountPlayerId)
             val merged = CloudMerge.merge(local, progress, accountPlayerId)
@@ -220,7 +224,11 @@ class SqliteProgressRepository(
             CloudProgressStore.write(db, accountPlayerId, "state", merged.progress)
             db.delete("cloud_manifests", "account_id = ? AND kind = 'pending'", arrayOf(accountPlayerId))
             if (selectedRoundId != null) setMetadata(db, "cloud_selected_round:" + account.id, selectedRoundId)
+            snapshot(db, account.id).cloudProjectionStamp()
         }
+
+    override suspend fun preferredCloudRound(accountPlayerId: String): String? = read { db ->
+        profile(db, accountPlayerId)?.let { metadata(db, "cloud_selected_round:" + it.id) }
     }
 
     override suspend fun lastConfirmedBackup(accountPlayerId: String): Long? = read { db ->

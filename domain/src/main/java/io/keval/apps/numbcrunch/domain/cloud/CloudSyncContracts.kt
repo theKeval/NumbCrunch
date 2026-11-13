@@ -4,6 +4,8 @@ interface CloudSyncRepository : CloudProgressRepository {
     suspend fun pendingCloudMerge(accountPlayerId: String): CloudProgress?
     suspend fun lastConfirmedBackup(accountPlayerId: String): Long?
     suspend fun recordConfirmedBackup(accountPlayerId: String, at: Long)
+    suspend fun preferredCloudRound(accountPlayerId: String): String?
+    suspend fun importAndStamp(accountPlayerId: String, progress: CloudProgress, selectedRoundId: String?): String
 }
 
 /** The adapter reads every remote candidate before calling merge; upload happens only after local acceptance. */
@@ -25,6 +27,7 @@ data class CloudBackupState(
     val generation: Long = 0,
     val lastSuccessfulBackup: Long? = null,
     val reconciliationReady: Boolean = false,
+    val reconciledStamp: String? = null,
     val choice: CloudMergeResult? = null,
     val invalidData: Boolean = false,
 )
