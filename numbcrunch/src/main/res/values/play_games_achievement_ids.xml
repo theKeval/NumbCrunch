@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="achievement_learning_the_ropes" translatable="false">CgkIlrDZkIsQEAIQBg</string>
+    <string name="achievement_first_solo_solve" translatable="false">CgkIlrDZkIsQEAIQBw</string>
+    <string name="achievement_getting_the_hang_of_it" translatable="false">CgkIlrDZkIsQEAIQCA</string>
+    <string name="achievement_double_digits" translatable="false">CgkIlrDZkIsQEAIQBQ</string>
+    <string name="achievement_persistent_puzzler" translatable="false">CgkIlrDZkIsQEAIQCQ</string>
+    <string name="achievement_century_solver" translatable="false">CgkIlrDZkIsQEAIQAg</string>
+    <string name="achievement_medium_mastered" translatable="false">CgkIlrDZkIsQEAIQBA</string>
+    <string name="achievement_hard_earned" translatable="false">CgkIlrDZkIsQEAIQCg</string>
+    <string name="achievement_hard_regular" translatable="false">CgkIlrDZkIsQEAIQAw</string>
+    <string name="achievement_unaided_deduction" translatable="false">CgkIlrDZkIsQEAIQCw</string>
+</resources>

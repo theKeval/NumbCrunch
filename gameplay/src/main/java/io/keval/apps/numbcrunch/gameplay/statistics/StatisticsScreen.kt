@@ -24,6 +24,7 @@ import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOrangeTop
 import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.progress.*
+import io.keval.apps.numbcrunch.gameplay.engagement.AchievementsRoute
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.common.*
 import io.keval.apps.numbcrunch.gameplay.connection.LocalPlayerConnection
@@ -119,6 +120,7 @@ fun StatisticsScreen(
                     if (stats.wins == 0L) GuideBody(stringResource(R.string.statistics_no_wins))
                     GuideBody(stringResource(R.string.statistics_average_help))
                 }
+                AchievementsRoute()
                 GuidePanel(stringResource(R.string.statistics_streaks_title)) {
                     Metric(R.string.statistics_current_streak, counts.format(stats.currentWinStreak))
                     Metric(R.string.statistics_best_streak, counts.format(stats.bestWinStreak))

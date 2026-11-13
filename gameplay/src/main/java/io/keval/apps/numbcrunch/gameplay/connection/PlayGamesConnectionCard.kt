@@ -36,6 +36,7 @@ import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOrangeTop
 import io.keval.apps.numbcrunch.domain.connection.ConnectionStatus
 import io.keval.apps.numbcrunch.domain.connection.PlayerSession
+import io.keval.apps.numbcrunch.gameplay.engagement.AchievementsRoute
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.game.WoodPanel
 
@@ -117,6 +118,7 @@ fun PlayGamesConnectionCard(
                     Text(stringResource(R.string.play_games_refresh), color = NumbCrunchGoldCream)
                 }
             }
+            AchievementsRoute()
         }
     }
     confirmingAccount?.let { accountId ->

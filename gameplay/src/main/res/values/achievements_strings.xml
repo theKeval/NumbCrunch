@@ -1,0 +1,13 @@
+<resources>
+    <string name="achievements_view">Achievements</string>
+    <string name="achievements_connect">Connect for achievements</string>
+    <string name="achievements_connect_explanation">Connect to Play Games to earn and view achievements. You can keep playing offline.</string>
+    <string name="achievements_waiting">Achievements sync after your saved progress is reconciled. Unimported guest progress stays on this device.</string>
+    <string name="achievements_syncing">Updating achievements…</string>
+    <string name="achievements_synced">Your eligible progress is synced to Play Games achievements.</string>
+    <string name="achievements_pending">Achievement updates are saved on this device and will retry when you reconnect.</string>
+    <string name="achievements_retry">Retry achievements</string>
+    <string name="achievements_opening">Opening Play Games achievements…</string>
+    <string name="achievements_unavailable">Play Games achievements could not open. Try again when connected.</string>
+    <string name="achievements_configuration_error">Achievements are not available for this game configuration yet. Your progress is safe on this device.</string>
+</resources>

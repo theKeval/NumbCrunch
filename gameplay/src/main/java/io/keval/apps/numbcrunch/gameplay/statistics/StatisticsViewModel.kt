@@ -34,7 +34,7 @@ class StatisticsViewModel(
         difficulty = Difficulty.entries.firstOrNull { it.name == savedStateHandle.get<String>(DIFFICULTY_KEY) },
     )))
     val uiState = _uiState.asStateFlow()
-    private var rounds = emptyList<RoundRecord>()
+    private var snapshot: ProgressSnapshot? = null
     private var observing: Job? = null
 
     init { refresh() }
@@ -45,10 +45,10 @@ class StatisticsViewModel(
         observing = viewModelScope.launch {
             try {
                 repository.observeSelectedProfile().collectLatest { profile ->
-                    rounds = emptyList()
+                    snapshot = null
                     _uiState.value = StatisticsUiState(profile = profile, filter = _uiState.value.filter)
-                    repository.observeRounds(profile.id).collect { records ->
-                        rounds = records
+                    repository.observeProgress(profile.id).collect { records ->
+                        snapshot = records
                         project(profile)
                     }
                 }
@@ -71,12 +71,14 @@ class StatisticsViewModel(
 
     private fun project(profile: PlayerProfile) {
         val filter = _uiState.value.filter
-        val visible = rounds.filter { (filter.mode == null || it.mode == filter.mode) &&
+        val saved = snapshot ?: return
+        val visible = saved.rounds.filter { (filter.mode == null || it.mode == filter.mode) &&
             (filter.difficulty == null || it.difficulty == filter.difficulty) }
         _uiState.value = _uiState.value.copy(
             isLoading = false, hasError = false,
-            recordedSince = minOf(profile.trackingStartedAt, rounds.minOfOrNull { it.createdAt } ?: profile.trackingStartedAt),
-            statistics = PlayerStatistics.fromRounds(visible),
+            recordedSince = (listOf(profile.trackingStartedAt) + saved.associatedProfiles.map { it.trackingStartedAt } +
+                saved.rounds.map { it.createdAt } + saved.completedFacts.map { it.createdAt }).minOrNull(),
+            statistics = saved.statisticsFor(filter),
             ongoing = visible.count { !it.status.isTerminal }.toLong(),
         )
     }
