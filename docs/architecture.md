@@ -30,7 +30,7 @@ There is deliberately no dependency edge between the revamp modules and
 | `:numbcrunch` | Android application | Application object, activity, composition root, and Navigation Compose host |
 | `:gameplay` | Android library | Welcome and Home UI/state plus Game, Tutorial, Gameplay, and About destinations |
 | `:domain` | Kotlin/JVM library | Repository interfaces, thin use cases, and pure game rules (`GuessRules`) |
-| `:data` | Android library | App-info, in-memory game-session, and Preferences DataStore tutorial repositories |
+| `:data` | Android library | App-info, in-memory setup handoff, transactional SQLite progress, and Preferences DataStore repositories |
 | `:core-ui` | Android library | Material 3 colors, typography, and `NumbCrunchTheme` |
 | `:guesser_v1` | Android application | Complete legacy XML/View game, physically located in `app/` |
 
@@ -63,7 +63,9 @@ flowchart TD
     COMPLETE --> TUTORIAL_REPO
 ```
 
-`NumbCrunchApplication` lazily creates one `AppContainer`. The container performs
+`NumbCrunchApplication` initializes Play Games Services at startup and lazily
+creates one `AppContainer`. Play Games sign-in runs independently of navigation
+and gameplay. The container performs
 manual dependency injection by obtaining repositories from `RepositoryModule`
 and constructing use cases. `MainActivity` enables edge-to-edge drawing and
 sets Compose content. `NumbCrunchApp` creates the navigation controller.
@@ -104,17 +106,20 @@ Welcome is removed when opening Tutorial or Home, so Back cannot reopen it.
 | Friend secret input | `HomeViewModel` / `HomeUiState` | Home navigation entry/ViewModel |
 | Validation message | `HomeViewModel` / `HomeUiState` | Home navigation entry/ViewModel |
 | Handed-off friend secret | `InMemoryGameSessionRepository` | `AppContainer` / application process |
-| Round secret, difficulty, guesses, hint use, input, dialogs | `GameViewModel` / `SavedStateHandle` | Game navigation entry, including process recreation |
+| Round secret, difficulty, guesses, hint use, input, outcome | `ProgressRepository` / SQLite | Across launches; immutable local profile ownership |
+| Round ID and dismissed win dialog | `GameViewModel` / `SavedStateHandle` | Game navigation entry, including process recreation |
 | Navigation back stack | `NavHostController` | Compose activity instance |
 | Music and sound-effect settings | `PreferencesSettingsRepository` (DataStore) | Across launches |
 | Sound pool and music player | `NumbCrunchAudio` in `AppContainer` | Application process; music paused while the activity is stopped |
 
 `HomeUiState` and `GameUiState` are exposed as read-only `StateFlow`s and
-collected with lifecycle awareness. Home difficulty and the Game round use
-`SavedStateHandle`. New Home selections default to Easy; older restored rounds
-without a saved difficulty use Hard. Difficulty cannot change within a round,
-and Single Player replay retains it. There is no database or cross-launch game
-persistence.
+collected with lifecycle awareness. Home difficulty uses `SavedStateHandle`;
+Game projects only committed SQLite state. New Home selections default to Easy;
+imported legacy rounds without a saved difficulty use Hard. Difficulty cannot
+change within a round, and Single Player replay retains it. Profiles use local
+opaque IDs; the current Game flow uses the guest profile even when PGS signs in.
+Connection/profile switching and cloud sync are subsequent work. See
+[Durable player progress](player-progress.md).
 Tutorial completion and audio settings share one Preferences DataStore file
 (`numbcrunch_preferences`) through a single delegate in `NumbCrunchPreferences.kt`.
 
@@ -172,8 +177,9 @@ Gameplay help only pops back to the existing round.
 
 The revamp application ID is `io.keval.apps.numbcrunch`, with debug builds
 suffixed `.debug` so they install beside the Play release; the V1 application
-ID is `com.thekeval.guesser`. Both target SDK 36, require API 21 or later, use Java
-17, and are locked to portrait orientation.
+ID is `com.thekeval.guesser`. Both target SDK 36, use Java 17, and are locked to
+portrait orientation. NumbCrunch requires API 24 or later for its Play Games
+SDK; V1 retains its API 21 minimum.
 
 ## Guesser V1 Architecture
 

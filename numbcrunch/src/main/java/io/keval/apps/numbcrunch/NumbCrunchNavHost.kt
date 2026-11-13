@@ -304,6 +304,7 @@ fun NumbCrunchNavHost(
             popExitTransition = { slideOutToRight() },
         ) { entry ->
             GameRoute(
+                progressRepository = appContainer.progressRepository,
                 friendSecretNumber = appContainer.getFriendSecretUseCase(),
                 difficulty = Difficulty.fromName(entry.arguments?.getString(GAME_DIFFICULTY_ARGUMENT))
                     ?: Difficulty.HARD,

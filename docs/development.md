@@ -4,7 +4,8 @@
 
 - JDK 17
 - Android Studio with Android SDK 36, or equivalent command-line tools
-- An emulator or device running Android 5.0/API 21 or later
+- An emulator or device running Android 7.0/API 24 or later for NumbCrunch;
+  Guesser V1 still supports Android 5.0/API 21 or later
 
 Set `ANDROID_HOME`, or create an untracked `local.properties`:
 
@@ -84,6 +85,39 @@ The different application IDs allow both builds to be installed together. The
 revamp's debug build is `io.keval.apps.numbcrunch.debug`, labelled
 "NumbCrunch Debug", so it also installs beside the Play version.
 
+### Test Play Games sign-in
+
+NumbCrunch pins `play-services-games-v2:22.1.0`, which exposes `GameStatsClient`
+and `PlayerGameEvent`. The [Google SDK setup guide](https://developers.google.com/android/guides/setup)
+and [release notes](https://developers.google.com/android/guides/releases)
+document this version and the Android 7.0/API 24 baseline. Shared libraries
+retain their lower minimum because they do not depend on the Play Games SDK.
+SDK initialization runs for both debug and release; only diagnostic sign-in
+logging is debug-only. This dependency upgrade does not yet record Game Stats.
+
+Use a Google Play-enabled device with an existing Play Games profile. The
+profile's Google account must be listed in Play Console's Play Games Services
+testers and, while OAuth is in Testing, in Google Cloud's OAuth test users.
+The Android credential for `io.keval.apps.numbcrunch.debug` must match the
+SHA-1 of the certificate that signed the installed debug APK.
+
+Install and launch the debug build using the commands above, then run:
+
+```bash
+adb logcat -d -s NumbCrunchPlayGames:D
+```
+
+Look for `Authenticated: true` from the latest launch. The SDK signs in at
+startup and suppresses automatic prompts to create a Play Games profile.
+
+For SDK upgrades, build and lint the debug app, run domain/gameplay unit tests,
+and inspect `:numbcrunch:dependencies --configuration releaseRuntimeClasspath`
+and `:numbcrunch:processReleaseMainManifest` without building a signed release.
+Verify Welcome, Tutorial, game and audio settings on API 24 and a current API,
+including offline and unavailable Play services. Install over an existing
+debug build without clearing app storage to check settings and tutorial
+progress survive. Devices below API 24 cannot install this update.
+
 ## Changing the Revamp
 
 ### Domain and Data
@@ -107,21 +141,20 @@ revamp's debug build is `io.keval.apps.numbcrunch.debug`, labelled
 
 ### State and Persistence
 
-The friend-secret setup handoff is process-memory only. Once Game starts, its
-secret and round state use `SavedStateHandle`, including difficulty and Medium
-hint use. This supports Android background recreation, not a persistent saved-game
-database. Before adding further persistence, define:
-
-- whether a secret survives process death;
-- when it is consumed or cleared;
-- whether it may be backed up;
-- how sensitive values are excluded from logs and navigation arguments.
+The friend-secret setup handoff is process-memory only. Once Game starts,
+`ProgressRepository` stores the round in SQLite, including input, guesses,
+difficulty, Medium hint use and outcome. `SavedStateHandle` retains only the
+round ID and win-dialog presentation state after one-time legacy import.
+Commit candidates before updating the UI; errors must preserve the last saved
+state and offer retry. Never log secrets/guesses or use them in navigation
+arguments. Progress databases are excluded from Android backup/device transfer.
+See [Durable player progress](player-progress.md) for identity, revision,
+statistics and retention contracts.
 
 Preferences DataStore holds tutorial completion and audio settings in one
 `numbcrunch_preferences` file. New preference repositories must reuse the
 `numbCrunchPreferences` delegate in `:data`; a second delegate for the same file
-crashes at runtime. Do not store the friend secret there without first
-answering the questions above.
+crashes at runtime. Keep round facts in the transactional progress database.
 
 ### Audio
 

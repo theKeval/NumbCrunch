@@ -16,6 +16,14 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
 - Refine feedback to centered, color-only digits with orange misplaced clues;
   Medium uses the info slot for Hint, preserving full-size guesses and tappable
   remarks. Difficulty labels use the warm gold game styling.
+- Google Play Games Services can sign in players with an existing profile.
+  Gameplay remains available offline and without an account.
+- Require Android 7.0 (API 24) or later and upgrade the Play Games SDK to 22.1.0
+  for Game Stats support. Older Android devices cannot receive this update;
+  Guesser V1's Android 5.0 minimum is unchanged.
+- Persist round state and outcomes locally, with duplicate-safe statistics and
+  retryable save errors. Keep unfinished rounds recoverable after app closure;
+  explicit pause/resume controls and the Statistics screen follow separately.
 
 ## 1.1.0 (versionCode 3) — internal and closed testing
 

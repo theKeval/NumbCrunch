@@ -1,6 +1,6 @@
 # NumbCrunch Privacy Policy
 
-**Effective date:** November 12, 2026
+**Effective date:** November 13, 2026
 
 This privacy policy explains how the NumbCrunch game for Android (package
 `io.keval.apps.numbcrunch`), published on Google Play by Keval Langalia ("we",
@@ -8,25 +8,28 @@ This privacy policy explains how the NumbCrunch game for Android (package
 
 ## Summary
 
-NumbCrunch is a game for players of all ages, including young children. It
-does not collect, store on any server, sell, or share any personal information,
-from anyone. The app has no accounts, no advertising, no analytics, no chat or
-social features, no in-app purchases, and no internet access. Everything it
-remembers stays on your device.
+NumbCrunch is a game for players of all ages, including young children. You
+can play offline and without an account. Google Play Games Services provides
+optional sign-in for players with a Play Games profile. NumbCrunch has no
+advertising, chat, or in-app purchases.
 
 ## Information the App Collects
 
-**None.** NumbCrunch does not request the Android internet permission, so it
-cannot send any information from your device to us or to anyone else. It does
-not ask for your name, age, email address, or any other personal details, and
-it does not access your contacts, location, camera, microphone, photos, files,
-device identifiers, or advertising ID.
+NumbCrunch does not ask for your name, age, email address, or other personal
+details. We do not operate a server for the game or receive your Play Games
+profile details. Google handles Play Games sign-in and related data as
+described below.
 
 ## Third-Party Services
 
-NumbCrunch contains no third-party advertising, analytics, crash-reporting,
-social, or sign-in services. It is built only with standard Android and Jetpack
-libraries, which run entirely on your device.
+Google Play Games Services can sign you in automatically with an existing
+profile. Google handles your Play Games account and profile information, such
+as your gamer tag and avatar. Google's SDK also collects analytics and
+diagnostics to improve its services. Google encrypts this data in transit and
+handles it under [Google's Privacy Policy](https://policies.google.com/privacy).
+You can manage your sign-in and profile in your device's Play Games settings.
+NumbCrunch keeps your rounds and game progress on your device.
+Play Games sign-in needs an internet connection; playing rounds does not.
 
 ## Information Stored Only on Your Device
 
@@ -38,11 +41,12 @@ device. We cannot see or access any of it.
   screen after closing the app in the background.
 - **First-launch progress:** whether you have completed or skipped the first-launch
   introduction and tutorial.
-- **The current round:** the hidden number, your guesses, the player mode,
-  difficulty, and which guess used the Medium hint are kept while a round is
-  in progress, so Android can restore the round without restoring a spent hint
-  if it closes the app in the background. This also includes the hidden number
-  in Double Player mode.
+- **Round history and statistics:** local profile and round identifiers, hidden
+  numbers, guesses, pending input, player mode, difficulty, hint use, outcomes,
+  and times are retained to restore play and calculate your totals. This
+  includes Double Player hidden numbers. Tracking starts with this update;
+  totals from earlier games are not reconstructed. A round already available
+  in Android's saved state can be restored once into the new history.
 
 You can delete all of this at any time by clearing the app's storage in your
 device's settings or by uninstalling the app.
@@ -54,6 +58,9 @@ app's settings and tutorial progress in your device backup, which Google stores
 in your Google account. This backup is managed by Android and Google under
 [Google's Privacy Policy](https://policies.google.com/privacy); we cannot
 access it. You can control backups in your device's settings.
+The round-history database is excluded from Android's automatic cloud backup
+and device-transfer rules. Its contents stay on this installation; this version
+does not yet back up game history through Play Games Saved Games.
 
 ## Google Play
 
@@ -67,30 +74,18 @@ not identify you.
 
 ## No External Links
 
-NumbCrunch contains no links to websites, and nothing in the game takes you
-out of the app. This privacy policy can be read inside the game: open
+NumbCrunch does not open websites. To read this policy inside the game, open
 **About**, then tap **Privacy policy**. Web addresses mentioned in this policy
 are shown there as plain text.
 
 ## Children's Privacy
 
 NumbCrunch is designed for everyone, including children under 13 and
-children under 5. We do not knowingly collect personal information from
-children, and because the app collects no personal information from anyone,
-no child's personal information is collected, used, or disclosed. In
-particular, the app:
-
-- does not ask children for any personal details or let them share any;
-- does not use persistent identifiers, such as the advertising ID, and shows
-  no advertising, including personalized or interest-based advertising;
-- has no accounts, chat, social features, or purchases; and
-- does not send any information off the device.
-
-Because we hold no personal information about any child, there is nothing for
-a parent or guardian to review or delete with us. A parent or guardian can
-remove the game's on-device settings and tutorial progress at any time by
-clearing the app's storage or uninstalling the app. Parents and guardians
-with questions can contact us using the details below.
+children under 5. We do not ask children for personal details. Children can
+play without signing in. Google manages supervised Play Games profiles through
+Family Link. Parents and guardians can manage that profile through Google and
+remove the game's on-device settings, tutorial progress, and round history by clearing the
+app's storage or uninstalling it. They can contact us using the details below.
 
 ## Changes to This Policy
 

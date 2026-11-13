@@ -45,7 +45,7 @@ About presents NumbCrunch's family origin story, credits, installed version, and
 a Privacy policy button that opens the full policy inside the game; nothing in
 the app links out to a website. All three reuse the wooden game theme.
 The new app includes music and sound-effect settings, but does **not yet
-implement vibration settings, profiles, or scoreboards**.
+implement vibration settings, in-game profiles, or scoreboards**.
 
 ## Game Rules
 
@@ -95,15 +95,22 @@ See the [architecture guide](docs/architecture.md) and
 - Kotlin 2.2
 - Android Gradle Plugin 9.0.1 and Gradle 9.1
 - Java 17
-- Compile/target SDK 36; minimum SDK 21
+- Compile/target SDK 36; minimum SDK 24 for NumbCrunch and 21 for Guesser V1
 - Jetpack Compose and Navigation Compose for the revamp
 - XML Views, Navigation Component, LiveData, and ViewModel for V1
 - JUnit 4 tests
 
-The current revamp has no backend, account system, analytics, or network
-integration. Friend secrets are handed to Game in memory; once a round starts,
-Android saved state can restore its secret, guesses, difficulty and hint use
-after background process recreation.
+Gameplay works offline and without an account. Google Play Games Services
+can authenticate players with an existing profile at launch. Friend secrets
+are handed to Game in memory. Once a round starts, a local SQLite database
+stores its secret, guesses, difficulty, hint use and outcome across launches.
+Entering Game restores any unfinished guest round. Local statistics begin with
+this update; no historical totals are invented. See
+[Durable player progress](docs/player-progress.md) for storage and backup rules.
+
+NumbCrunch requires Android 7.0 (API 24) or later. Devices on Android 5 or 6
+can keep an installed older version but cannot receive this update. The legacy
+Guesser V1 app retains its Android 5.0 (API 21) minimum.
 
 ## Build and Test
 

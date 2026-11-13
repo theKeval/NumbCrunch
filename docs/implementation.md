@@ -117,22 +117,25 @@ sequenceDiagram
 
 Single Player stores `null`; Double Player stores the validated secret.
 `GameRoute` passes the retrieved value into `GameViewModel`, which uses it as
-the round secret (or generates one when absent) and never displays it until
-the round is won. The repository is process-memory only.
+the round secret (or generates one when absent) when creating a new durable
+round. An existing unfinished round is restored first. The setup handoff is
+process-memory only; committed game facts live in SQLite. Secrets are revealed
+only after a win or Give up.
 
 ## Game Screen
 
 - `GuessRules` (`:domain`, package `domain.game`) validates codes, generates
   unique secrets, and evaluates a guess into per-digit `DigitFeedback`
   (`EXACT`, `CLOSE`, `ABSENT`) plus the V1 remark string.
-- `GameViewModel` owns the secret, submitted guesses, current input, and dialog
-  flags. These are stored in `SavedStateHandle`, so they survive rotation,
-  process death, and navigating to Help and back. It exposes `GameUiState` as
-  a `StateFlow`.
+- `GameViewModel` serializes game actions and commits them through
+  `ProgressRepository` before exposing `GameUiState`. SQLite holds the round
+  facts across launches; `SavedStateHandle` holds only its ID and win-dialog
+  presentation after legacy migration. A failed write leaves the prior UI and
+  offers retry. Initial load failure also permits returning Home.
 - `Difficulty` is a pure domain enum. Game receives the selected difficulty as
-  a nonsecret navigation argument, freezes it at round creation, and saves its
-  name in the same handle. Restored rounds with a valid saved secret use their
-  saved difficulty, falling back to Hard when older state has none. Replay
+  a nonsecret navigation argument and freezes it in the durable round record.
+  Restored rounds use their saved difficulty, falling back to Hard when
+  importing older state without one. Replay
   retains the difficulty. Easy reveals every submitted row; Medium saves one
   redeemed guess-row index and derives its remaining hint from that state; Hard
   hides per-digit feedback. A new round clears the redeemed row.
@@ -141,9 +144,13 @@ the round is won. The repository is process-memory only.
   (`swipeToGoBack`) calls the same back request; the content follows the
   finger by up to 48 dp and springs back.
 - Quit calls `onQuitRequested` (confirmation), then `onConfirmQuit`, which sets
-  `isGivenUp`, reveals the secret, locks input, and is saved in
-  `SavedStateHandle`. `QuitRevealDialog` flips the secret tiles in and returns
+  a committed GIVEN_UP outcome, reveals the secret, and locks input.
+  `QuitRevealDialog` flips the secret tiles in and returns
   Home when closed.
+- Confirmed Back/leave commits ABANDONED before navigation. A first valid guess
+  marks a round played; wins, give-ups and abandonments contribute once to
+  local statistics. Tutorial practice contributes nothing. See
+  [Durable player progress](player-progress.md) for formulas and retention.
 - `GuessResultFeedback` plays a flip tick per tile, then the SMYLE jingle or
   clue chime when the remark pops in (`REMARK_REVEAL_DELAY_MS`). A saveable
   guess count stops the result replaying after Help or Settings. The win
