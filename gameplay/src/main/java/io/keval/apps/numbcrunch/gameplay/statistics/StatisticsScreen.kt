@@ -34,14 +34,15 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun StatisticsRoute(repository: ProgressRepository, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun StatisticsRoute(repository: ProgressRepository, onBack: () -> Unit, modifier: Modifier = Modifier,
+    onLeaderboardClick: () -> Unit = {}) {
     val viewModel: StatisticsViewModel = viewModel(factory = StatisticsViewModel.factory(repository))
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val binding = LocalPlayerConnection.current
     val session = binding?.session?.collectAsStateWithLifecycle()?.value
     val name = session?.takeIf { it.status == ConnectionStatus.CONNECTED && it.accountProfile?.id == state.profile?.id }
         ?.player?.displayName
-    StatisticsScreen(state, onBack, viewModel::selectMode, viewModel::selectDifficulty, viewModel::refresh, name, modifier)
+    StatisticsScreen(state, onBack, viewModel::selectMode, viewModel::selectDifficulty, viewModel::refresh, name, modifier, onLeaderboardClick)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -54,6 +55,7 @@ fun StatisticsScreen(
     onRetry: () -> Unit,
     playerName: String? = null,
     modifier: Modifier = Modifier,
+    onLeaderboardClick: () -> Unit = {},
 ) {
     val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.getDefault()
     val counts = remember(locale) { NumberFormat.getIntegerInstance(locale) }
@@ -73,6 +75,7 @@ fun StatisticsScreen(
                     if (state.profile?.pgsPlayerId == null) R.string.statistics_guest else R.string.statistics_player,
                 )
                 GuidePanel(profileLabel) {
+                    GuideAction(stringResource(R.string.hard_board_title), onLeaderboardClick, Modifier.fillMaxWidth())
                     GuideBody(stringResource(R.string.statistics_device_storage))
                     state.recordedSince?.let { GuideBody(stringResource(R.string.statistics_recorded_since, dates.format(Date(it)))) }
                     GuideBody(stringResource(R.string.statistics_no_history))

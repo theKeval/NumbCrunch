@@ -41,6 +41,8 @@ import io.keval.apps.numbcrunch.gameplay.progress.RoundDestination
 import io.keval.apps.numbcrunch.gameplay.progress.RoundEntryViewModel
 import io.keval.apps.numbcrunch.gameplay.progress.RoundEntryDialogs
 import io.keval.apps.numbcrunch.gameplay.statistics.StatisticsRoute
+import io.keval.apps.numbcrunch.gameplay.leaderboard.HardWinsLeaderboardRoute
+import io.keval.apps.numbcrunch.gameplay.navigation.HARD_WINS_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.STATISTICS_ROUTE
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.about.AboutScreen
@@ -328,7 +330,18 @@ fun NumbCrunchNavHost(
             popEnterTransition = { slideInFromLeft() },
             popExitTransition = { slideOutToRight() },
         ) {
-            StatisticsRoute(appContainer.progressRepository, navController::navigateUp)
+            StatisticsRoute(appContainer.progressRepository, navController::navigateUp,
+                onLeaderboardClick = { navController.navigate(HARD_WINS_ROUTE) { launchSingleTop = true } })
+        }
+
+        composable(
+            route = HARD_WINS_ROUTE,
+            enterTransition = { slideInFromRight() },
+            exitTransition = { slideOutToLeft() },
+            popEnterTransition = { slideInFromLeft() },
+            popExitTransition = { slideOutToRight() },
+        ) {
+            HardWinsLeaderboardRoute(navController::navigateUp)
         }
 
         composable(
