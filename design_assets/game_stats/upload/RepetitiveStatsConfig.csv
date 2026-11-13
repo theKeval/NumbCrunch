@@ -1,0 +1,6 @@
+Stat Id,Event Name,Event Property Name,Aggregation Type,Stat Display Name,Stat Description,Filter Property,Filter Operator,Filter Value,Is Competitive,Min limit,Max limit,Icon File Name,Good value direction,Unit
+rounds_finished_v1,roundCompleted_v1,guessCount,COUNT,Rounds finished,"Finish a round after making at least one guess. Wins, give-ups and abandoned rounds count.",,,,false,,,rounds_finished_v1.png,INCREASING,UNITLESS
+puzzles_solved_v1,roundCompleted_v1,guessCount,COUNT,Puzzles solved,Solve a puzzle in any mode or difficulty.,outcome,=,WON,false,,,puzzles_solved_v1.png,INCREASING,UNITLESS
+hard_solo_puzzles_solved_v1,roundCompleted_v1,guessCount,COUNT,Hard solo puzzles solved,Solve Single Player puzzles on Hard difficulty. Other modes and difficulties do not count.,hardSoloWin,=,true,true,0,600,hard_solo_puzzles_solved_v1.png,INCREASING,UNITLESS
+unaided_medium_solo_solves_v1,roundCompleted_v1,guessCount,COUNT,Unaided Medium solo solves,Solve Single Player puzzles on Medium difficulty without using the hint.,unaidedMediumSoloWin,=,true,false,,,unaided_medium_solo_solves_v1.png,INCREASING,UNITLESS
+guesses_in_finished_rounds_v1,roundCompleted_v1,guessCount,SUM,Guesses in finished rounds,"Count every guess made in rounds you finish. This measures activity, not skill.",,,,false,,,guesses_in_finished_rounds_v1.png,INCREASING,UNITLESS

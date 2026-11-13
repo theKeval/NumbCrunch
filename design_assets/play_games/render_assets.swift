@@ -4,9 +4,8 @@ import Foundation
 
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
 let catalog = try JSONSerialization.jsonObject(with: Data(contentsOf: root.appendingPathComponent("catalog.json"))) as! [String: Any]
-let achievements = catalog["achievements"] as! [[String: Any]]
-let leaderboard = catalog["leaderboard"] as! [String: Any]
-let records = achievements + [leaderboard]
+let records = (catalog["stats"] as? [[String: Any]]) ??
+    ((catalog["achievements"] as! [[String: Any]]) + [catalog["leaderboard"] as! [String: Any]])
 func color(_ hex: String, gray: Bool = false) -> CGColor {
     let n = UInt32(hex.dropFirst(), radix: 16)!
     let r = CGFloat((n >> 16) & 255) / 255, g = CGFloat((n >> 8) & 255) / 255, b = CGFloat(n & 255) / 255

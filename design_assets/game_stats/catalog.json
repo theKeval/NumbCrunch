@@ -1,0 +1,10 @@
+{
+  "event": "roundCompleted_v1",
+  "stats": [
+    {"key":"rounds_finished_v1","name":"Rounds finished","description":"Finish a round after making at least one guess. Wins, give-ups and abandoned rounds count.","property":"guessCount","aggregation":"COUNT","filter":[],"competitive":false},
+    {"key":"puzzles_solved_v1","name":"Puzzles solved","description":"Solve a puzzle in any mode or difficulty.","property":"guessCount","aggregation":"COUNT","filter":["outcome","=","WON"],"competitive":false},
+    {"key":"hard_solo_puzzles_solved_v1","name":"Hard solo puzzles solved","description":"Solve Single Player puzzles on Hard difficulty. Other modes and difficulties do not count.","property":"guessCount","aggregation":"COUNT","filter":["hardSoloWin","=","true"],"competitive":true,"minimumPerHour":0,"maximumPerHour":600},
+    {"key":"unaided_medium_solo_solves_v1","name":"Unaided Medium solo solves","description":"Solve Single Player puzzles on Medium difficulty without using the hint.","property":"guessCount","aggregation":"COUNT","filter":["unaidedMediumSoloWin","=","true"],"competitive":false},
+    {"key":"guesses_in_finished_rounds_v1","name":"Guesses in finished rounds","description":"Count every guess made in rounds you finish. This measures activity, not skill.","property":"guessCount","aggregation":"SUM","filter":[],"competitive":false}
+  ]
+}
