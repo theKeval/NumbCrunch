@@ -41,9 +41,23 @@ class GameViewModel(
     init { launchWrite { loadRound() } }
 
     private suspend fun loadRound() {
-        val ownerId = initialOwnerId ?: savedStateHandle.get<String>(KEY_OWNER_ID) ?: repository.selectedProfile().id
         val requestedId = initialRoundId ?: savedStateHandle.get<String>(KEY_ROUND_ID)
-        val restored = requestedId?.let { requireNotNull(repository.findRound(ownerId, it)) { "Round unavailable" } }
+        val explicitOwner = initialOwnerId ?: savedStateHandle.get<String>(KEY_OWNER_ID)
+        val hasLegacyFacts = savedStateHandle.get<String>(KEY_SECRET)?.let(GuessRules::isValidCode) == true
+        // Before owner IDs were saved, every real round belonged to the guest namespace.
+        val ownerId = explicitOwner ?: if (requestedId != null || hasLegacyFacts) repository.guestProfile().id
+            else repository.selectedProfile().id
+        val restored = requestedId?.let { id ->
+            val direct = repository.findRound(ownerId, id)
+            val claimedGuest = if (direct == null && explicitOwner == null) {
+                val selected = repository.selectedProfile()
+                val snapshot = repository.exportProgress(selected.id)
+                snapshot.rounds.firstOrNull { record ->
+                    record.id == id && snapshot.guestClaims.any { it.guestProfileId == record.ownerId }
+                }
+            } else null
+            requireNotNull(direct ?: claimedGuest) { "Round unavailable" }
+        }
         val existing = restored ?: repository.unfinishedRound(ownerId)
         val loaded = existing ?: legacyRound(ownerId)?.let { legacy ->
             repository.importLegacyRound(legacy)?.also {

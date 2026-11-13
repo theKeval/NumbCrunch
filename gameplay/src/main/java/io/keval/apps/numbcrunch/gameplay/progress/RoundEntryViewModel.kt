@@ -53,6 +53,8 @@ class RoundEntryViewModel(
     private val _uiState = MutableStateFlow(RoundEntryUiState())
     val uiState = _uiState.asStateFlow()
     private var observing: Job? = null
+    private var operationJob: Job? = null
+    private var observedProfileId: String? = null
     private var pendingRequest: NewRoundRequest? = null
     private var pendingOwnerId: String? = null
     private var pendingCandidate: RoundRecord? = null
@@ -63,10 +65,33 @@ class RoundEntryViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun refresh() {
         observing?.cancel()
-        _uiState.value = _uiState.value.copy(isLoading = true, hasReadError = false)
+        _uiState.value = _uiState.value.copy(isLoading = true, hasReadError = false, ongoingRounds = emptyList())
         observing = viewModelScope.launch {
-            repository.observeSelectedProfile().flatMapLatest { profile -> repository.observeRounds(profile.id) }
-                .catch { _uiState.value = _uiState.value.copy(isLoading = false, hasReadError = true) }
+            repository.observeSelectedProfile().flatMapLatest { profile ->
+                if (observedProfileId != null && observedProfileId != profile.id) {
+                    operationJob?.cancel()
+                    pendingRequest = null
+                    pendingOwnerId = null
+                    pendingCandidate = null
+                    retry = null
+                }
+                observedProfileId = profile.id
+                _uiState.value = _uiState.value.copy(
+                    isLoading = true, hasReadError = false, ongoingRounds = emptyList(),
+                    choices = emptyList(), abandonTarget = null, destination = null, hasWriteError = false,
+                )
+                repository.observeRounds(profile.id)
+            }.catch {
+                operationJob?.cancel()
+                pendingRequest = null
+                pendingOwnerId = null
+                pendingCandidate = null
+                retry = null
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false, hasReadError = true, ongoingRounds = emptyList(), choices = emptyList(), abandonTarget = null,
+                    destination = null, hasWriteError = false,
+                )
+            }
                 .collect { rounds ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false, hasReadError = false,
@@ -107,9 +132,11 @@ class RoundEntryViewModel(
     }
 
     fun resume(saved: OngoingRound) {
-        if (blocked()) return
+        if (!canUseSavedRound()) return
         runOperation {
-            val record = requireNotNull(repository.findRound(saved.ownerId, saved.id)) { "Saved round unavailable" }
+            val selected = repository.selectedProfile()
+            val record = requireNotNull(repository.findRound(selected.id, saved.id)) { "Saved round unavailable" }
+            require(record.ownerId == saved.ownerId) { "Saved round ownership changed" }
             require(!record.status.isTerminal) { "Round already completed" }
             val active = if (record.status == RoundStatus.PAUSED) {
                 repository.updateRound(record.resume(now()), record.revision)
@@ -119,7 +146,9 @@ class RoundEntryViewModel(
     }
 
     fun requestAbandon(saved: OngoingRound) {
-        if (!blocked()) _uiState.value = _uiState.value.copy(abandonTarget = saved)
+        if (canUseSavedRound() && saved in (_uiState.value.ongoingRounds + _uiState.value.choices)) {
+            _uiState.value = _uiState.value.copy(abandonTarget = saved)
+        }
     }
 
     fun cancelAbandon() {
@@ -130,7 +159,9 @@ class RoundEntryViewModel(
         val target = _uiState.value.abandonTarget ?: return
         if (blocked()) return
         runOperation {
-            val record = requireNotNull(repository.findRound(target.ownerId, target.id))
+            val selected = repository.selectedProfile()
+            val record = requireNotNull(repository.findRound(selected.id, target.id)) { "Saved round unavailable" }
+            require(record.ownerId == target.ownerId) { "Saved round ownership changed" }
             if (!record.status.isTerminal) repository.updateRound(record.finish(RoundStatus.ABANDONED, now()), record.revision)
             _uiState.value = _uiState.value.copy(abandonTarget = null)
             // A claimed guest can retain another unfinished round. Each needs its own explicit choice.
@@ -167,12 +198,13 @@ class RoundEntryViewModel(
     }
 
     private fun blocked() = _uiState.value.isBusy || _uiState.value.hasWriteError || _uiState.value.destination != null
+    private fun canUseSavedRound() = !blocked() && !_uiState.value.isLoading && !_uiState.value.hasReadError
 
     private fun runOperation(operation: suspend () -> Unit) {
         if (_uiState.value.isBusy) return
         _uiState.value = _uiState.value.copy(isBusy = true, hasWriteError = false)
         retry = null
-        viewModelScope.launch {
+        operationJob = viewModelScope.launch {
             try { operation() }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) {

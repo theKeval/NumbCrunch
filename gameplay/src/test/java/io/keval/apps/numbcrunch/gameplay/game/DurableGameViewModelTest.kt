@@ -5,6 +5,7 @@ import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.progress.PlayerStatistics
 import io.keval.apps.numbcrunch.domain.progress.RoundStatus
 import io.keval.apps.numbcrunch.gameplay.progress.RoundEntryViewModel
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -123,5 +124,41 @@ class DurableGameViewModelTest {
         assertFalse(restored.uiState.value.showWinDialog)
         assertFalse(handle.contains("game_secret"))
         assertFalse(vm(handle).uiState.value.showWinDialog)
+    }
+
+    @Test fun `pre-owner round id restores guest progress after automatic account selection`() = runBlocking {
+        val handle = SavedStateHandle()
+        val original = vm(handle)
+        "527".forEach(original::onDigit); original.onEnter(); original.onDigit('8')
+        val originalId = original.uiState.value.roundId
+        handle.remove<String>("progress_owner_id")
+        val account = repository.activatePlayerProfile("newly-connected")
+        val restored = vm(handle)
+        assertEquals(originalId, restored.uiState.value.roundId)
+        assertEquals("guest", restored.uiState.value.ownerId)
+        assertEquals("8", restored.uiState.value.currentInput)
+        assertEquals(0, repository.exportProgress(account.id).rounds.size)
+    }
+
+    @Test fun `legacy game facts import into guest after automatic account selection`() = runBlocking {
+        val account = repository.activatePlayerProfile("newly-connected")
+        val handle = SavedStateHandle(mapOf("game_secret" to "573", "game_guesses" to arrayListOf("527"), "game_input" to "8"))
+        val restored = vm(handle)
+        assertEquals("guest", restored.uiState.value.ownerId)
+        assertEquals("8", restored.uiState.value.currentInput)
+        assertEquals(1, repository.exportProgress("guest").rounds.size)
+        assertTrue(repository.exportProgress(account.id).rounds.isEmpty())
+    }
+
+    @Test fun `pre-owner round id can restore its explicitly claimed guest namespace`() = runBlocking {
+        val handle = SavedStateHandle()
+        val original = vm(handle)
+        handle.remove<String>("progress_owner_id")
+        val account = repository.activatePlayerProfile("claimed-account")
+        repository.claimGuestProgress("guest", account.id)
+        val restored = vm(handle)
+        assertEquals(original.uiState.value.roundId, restored.uiState.value.roundId)
+        assertEquals("guest", restored.uiState.value.ownerId)
+        assertFalse(restored.uiState.value.hasPersistenceError)
     }
 }

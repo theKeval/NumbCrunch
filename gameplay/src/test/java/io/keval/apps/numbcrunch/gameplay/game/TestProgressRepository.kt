@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.CompletableDeferred
 
 internal class TestProgressRepository : ProgressRepository {
     private val profiles = mutableMapOf("guest" to PlayerProfile("guest", null, 1))
@@ -14,6 +15,7 @@ internal class TestProgressRepository : ProgressRepository {
     var failNextWrite = false
     var failAfterNextCreate = false
     var failReads = false
+    var updateGate: CompletableDeferred<Unit>? = null
     private var importedLegacy = false
     override suspend fun guestProfile(): PlayerProfile = profiles.values.firstOrNull { profile ->
         profile.pgsPlayerId == null && claims.value.none { it.guestProfileId == profile.id }
@@ -57,6 +59,7 @@ internal class TestProgressRepository : ProgressRepository {
         return round
     }
     override suspend fun updateRound(round: RoundRecord, expectedRevision: Long): RoundRecord {
+        updateGate?.await()
         writeCheck()
         val previous = records.value.single { it.id == round.id }
         if (previous == round) return previous

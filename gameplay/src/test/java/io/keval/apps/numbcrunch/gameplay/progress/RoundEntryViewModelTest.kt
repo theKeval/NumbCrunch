@@ -6,6 +6,7 @@ import io.keval.apps.numbcrunch.domain.progress.*
 import io.keval.apps.numbcrunch.gameplay.game.GameViewModel
 import io.keval.apps.numbcrunch.gameplay.game.TestProgressRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -184,5 +185,49 @@ class RoundEntryViewModelTest {
         assertTrue(entry.uiState.value.hasWriteError)
         assertNull(entry.uiState.value.destination)
         assertEquals(RoundStatus.WON, repository.records.value.single().status)
+    }
+
+    @Test fun `account switch read failure clears cards and rejects stale resume or abandon`() = runBlocking {
+        val repository = TestProgressRepository()
+        val accountA = repository.activatePlayerProfile("A")
+        val saved = RoundRecord("saved-A", accountA.id, RoundMode.SINGLE, Difficulty.HARD, "012", 1).pause(2)
+        repository.records.value = listOf(saved)
+        val entry = entry(repository)
+        val stale = entry.uiState.value.ongoingRounds.single()
+        repository.failReads = true
+        repository.activatePlayerProfile("B")
+        assertTrue(entry.uiState.value.hasReadError)
+        assertTrue(entry.uiState.value.ongoingRounds.isEmpty())
+        assertTrue(entry.uiState.value.choices.isEmpty())
+        entry.resume(stale)
+        entry.requestAbandon(stale)
+        entry.confirmAbandon()
+        assertNull(entry.uiState.value.destination)
+        assertNull(entry.uiState.value.abandonTarget)
+        assertEquals(saved, repository.records.value.single())
+        repository.failReads = false
+        entry.refresh()
+        entry.resume(stale)
+        assertTrue(entry.uiState.value.hasWriteError)
+        assertNull(entry.uiState.value.destination)
+        assertEquals(saved, repository.records.value.single())
+    }
+
+    @Test fun `account switch cancels an in-flight saved-round action before navigation`() = runBlocking {
+        val repository = TestProgressRepository()
+        val accountA = repository.activatePlayerProfile("A")
+        val saved = RoundRecord("saved-A", accountA.id, RoundMode.SINGLE, Difficulty.HARD, "012", 1).pause(2)
+        repository.records.value = listOf(saved)
+        val entry = entry(repository)
+        val gate = CompletableDeferred<Unit>()
+        repository.updateGate = gate
+        entry.resume(entry.uiState.value.ongoingRounds.single())
+        assertTrue(entry.uiState.value.isBusy)
+        repository.activatePlayerProfile("B")
+        gate.complete(Unit)
+        assertNull(entry.uiState.value.destination)
+        assertTrue(entry.uiState.value.ongoingRounds.isEmpty())
+        assertFalse(entry.uiState.value.isBusy)
+        assertEquals(saved, repository.records.value.single())
     }
 }
