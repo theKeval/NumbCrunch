@@ -11,7 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import io.keval.apps.numbcrunch.core.ui.artwork.rememberArtworkPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -43,7 +43,7 @@ fun WelcomeScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Image(
-                painter = painterResource(R.drawable.home_title),
+                painter = rememberArtworkPainter(R.drawable.home_title),
                 contentDescription = stringResource(R.string.cd_game_title),
                 modifier = Modifier.widthIn(max = 280.dp).fillMaxWidth(),
             )

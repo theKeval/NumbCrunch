@@ -1,6 +1,7 @@
 package io.keval.apps.numbcrunch.gameplay.game
 
 import androidx.lifecycle.SavedStateHandle
+import io.keval.apps.numbcrunch.domain.progress.*
 import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.game.DigitFeedback
 import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
@@ -379,4 +380,78 @@ class GameViewModelTest {
         assertFalse(replay.uiState.value.isGivenUp)
         assertNull(replay.uiState.value.revealedSecret)
     }
+    @Test fun `cloud successor keeps old view until explicit reload and never retries stale input`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(handle)
+        vm.type("4")
+        val repository = repositories.getValue(handle)
+        val previous = repository.records.value.single()
+        val newer = previous.editInput("48", previous.updatedAt + 1).pause(previous.updatedAt + 2)
+        repository.records.value = listOf(newer)
+        vm.onDigit('1')
+        assertEquals(RoundRecovery.UPDATED, vm.uiState.value.roundRecovery)
+        assertEquals("4", vm.uiState.value.currentInput)
+        assertEquals(newer, repository.records.value.single())
+        assertFalse(vm.uiState.value.isDigitEnabled('1'))
+        vm.onEnter()
+        assertEquals(newer, repository.records.value.single())
+        vm.onReloadChangedRound()
+        assertNull(vm.uiState.value.roundRecovery)
+        assertEquals("48", vm.uiState.value.currentInput)
+        assertEquals(RoundStatus.ACTIVE, repository.records.value.single().status)
+    }
+
+    @Test fun `cloud completed receipt offers Home without inventing abandon or saved pause`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(handle)
+        vm.type("4")
+        val repository = repositories.getValue(handle)
+        val previous = repository.records.value.single()
+        val won = previous.editInput("573", previous.updatedAt + 1).submitGuess(previous.updatedAt + 2)
+        repository.records.value = emptyList()
+        repository.outcomes.value = listOf(OutcomeFact.fromRound(won))
+        var navigatedAsSaved = false
+        vm.onSaveAndPause { navigatedAsSaved = true }
+        assertEquals(RoundRecovery.COMPLETED, vm.uiState.value.roundRecovery)
+        assertEquals("4", vm.uiState.value.currentInput)
+        assertFalse(navigatedAsSaved)
+        assertTrue(vm.onBackRequested())
+        assertTrue(repository.records.value.isEmpty())
+        assertEquals(RoundStatus.WON, repository.outcomes.value.single().status)
+    }
+
+    @Test fun `equal revision cloud branch requires reload instead of silently overwriting it`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(handle)
+        vm.type("4")
+        val repository = repositories.getValue(handle)
+        val previous = repository.records.value.single()
+        val otherBranch = previous.copy(currentInput = "8")
+        repository.records.value = listOf(otherBranch)
+        vm.onDigit('1')
+        assertEquals(RoundRecovery.UPDATED, vm.uiState.value.roundRecovery)
+        assertEquals("4", vm.uiState.value.currentInput)
+        assertEquals(otherBranch, repository.records.value.single())
+        vm.onReloadChangedRound()
+        assertEquals("8", vm.uiState.value.currentInput)
+        assertNull(vm.uiState.value.roundRecovery)
+    }
+
+    @Test fun `completion arriving after reload notice remains actionable`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(handle)
+        val repository = repositories.getValue(handle)
+        val previous = repository.records.value.single()
+        val newer = previous.editInput("4", previous.updatedAt + 1)
+        repository.records.value = listOf(newer)
+        vm.onDigit('1')
+        assertEquals(RoundRecovery.UPDATED, vm.uiState.value.roundRecovery)
+        val won = newer.editInput("573", newer.updatedAt + 1).submitGuess(newer.updatedAt + 2)
+        repository.records.value = emptyList()
+        repository.outcomes.value = listOf(OutcomeFact.fromRound(won))
+        vm.onReloadChangedRound()
+        assertEquals(RoundRecovery.COMPLETED, vm.uiState.value.roundRecovery)
+        assertTrue(vm.onBackRequested())
+    }
+
 }

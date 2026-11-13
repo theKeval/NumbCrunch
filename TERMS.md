@@ -1,6 +1,6 @@
 # NumbCrunch Terms of Service
 
-**Effective date:** November 12, 2026
+**Effective date:** November 13, 2026
 
 These terms govern your use of the NumbCrunch game for Android (package
 `io.keval.apps.numbcrunch`), published on Google Play by Keval Langalia ("we",
@@ -11,7 +11,8 @@ not agree, please do not use the app.
 
 NumbCrunch is a number-guessing game for players of all ages. You can play
 offline and without an account. Google Play Games Services provides optional
-sign-in. NumbCrunch has no advertising or in-app purchases. How we handle
+sign-in, cloud saves, achievements, Game Stats, and a leaderboard for eligible
+profiles. NumbCrunch has no advertising or in-app purchases. How we handle
 information is described in our
 [Privacy Policy](https://keval.io/apps/numbcrunch/privacy).
 
@@ -49,9 +50,11 @@ it. All rights not expressly granted are reserved.
 
 ## Your Data
 
-NumbCrunch stores only your settings, tutorial progress, and the current round
-on your device. You can delete all of it at any time by clearing the app's
-storage or uninstalling the app. We cannot access it.
+NumbCrunch stores settings, tutorial progress, rounds, and statistics on your
+device. A selected, connected Play Games player also uses Google's cloud saves
+and progress features. Clearing app storage or uninstalling removes local
+data, but does not delete Google's saved data. Google provides separate
+controls for that data. Offline play remains available without an account.
 Our [Privacy Policy](https://keval.io/apps/numbcrunch/privacy) describes the
 data Google Play Games Services handles.
 

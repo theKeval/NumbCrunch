@@ -20,6 +20,12 @@ credits, runtime version, and an in-game privacy policy.
 | [Revamp history and roadmap](revamp.md) | Project eras, PR #3 scope, current gaps, and recommended next phases |
 | [Development guide](development.md) | Setup, module-specific commands, testing, and change conventions |
 | [Versioning and release guide](releasing.md) | Version numbers, upload-key signing, release checklist, and Play Console steps |
+| [Player progress](player-progress.md) | Durable rounds, ownership, pause and local statistics |
+| [Cloud backup](cloud-backup.md) | Saved Games, confirmed backup status and recoverable conflicts |
+| [Achievements](achievements.md) | Truthful tutorial evidence and account-bound progress delivery |
+| [Game Stats](play-games-game-stats-v1.md) | Five repetitive stats and delivery limitations |
+| [Lifetime Hard leaderboard](play-games-leaderboard-v1.md) | Strict eligibility, score meaning and client trust limits |
+| [Player data publication handoff](player-data-publication.md) | Privacy, Data safety, console resources and later publication steps |
 
 ## Sources of Truth
 

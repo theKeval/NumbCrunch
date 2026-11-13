@@ -143,12 +143,13 @@ private class FakeProfiles : ProgressRepository {
         val rounds = if (ownerId == "guest") listOf(RoundRecord("round", ownerId, RoundMode.SINGLE, Difficulty.HARD, "123", 1)) else emptyList()
         return ProgressSnapshot(profile = owner, rounds = rounds)
     }
+    override suspend fun recordTutorialCompletion(completion: io.keval.apps.numbcrunch.domain.engagement.TutorialCompletion) = Unit
     override fun observeRounds(ownerId: String): Flow<List<RoundRecord>> = flowOf(emptyList())
     override suspend fun findRound(ownerId: String, roundId: String): RoundRecord? = null
     override suspend fun unfinishedRound(ownerId: String): RoundRecord? = null
     override suspend fun unfinishedRounds(ownerId: String) = emptyList<RoundRecord>()
     override suspend fun createRound(round: RoundRecord): RoundRecord = error("Not used")
-    override suspend fun updateRound(round: RoundRecord, expectedRevision: Long): RoundRecord = error("Not used")
+    override suspend fun updateRound(round: RoundRecord, expected: RoundRecord): RoundRecord = error("Not used")
     override suspend fun importRounds(ownerId: String, rounds: List<RoundRecord>) = Unit
     override suspend fun importLegacyRound(round: RoundRecord): RoundRecord? = error("Not used")
 }

@@ -34,6 +34,20 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
 - Define a bounded cloud progress format that omits completed-round secrets,
   preserves lifetime totals, and requires explicit choices for conflicting saves.
 
+- Back up connected player progress and paused games through Saved Games, with
+  visible pending/error states and recoverable conflict choices.
+- Deliver ten achievements, including verified tutorial completion, and show
+  native achievements plus an all-time Single Player Hard wins leaderboard.
+- Report five Game Stats from new round outcomes while preserving exact offline
+  statistics; no old history or cloud restore is replayed as new activity.
+- Update privacy and terms for Google cloud storage, shared accomplishments,
+  profile visibility, separate deletion controls, and age-dependent availability.
+- Recover an open game when cloud reconciliation replaces its saved version,
+  and prevent stale branches or interrupted SDK callbacks from overwriting progress.
+- Share decoded artwork across screens to prevent memory crashes on older
+  Android devices without increasing the app's heap limit.
+- Keep statistics and leaderboard filters readable in light system themes.
+
 ## 1.1.0 (versionCode 3) — internal and closed testing
 
 - New in-game Privacy policy screen, opened from About.

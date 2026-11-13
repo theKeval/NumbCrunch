@@ -40,15 +40,19 @@ data class CloudProgress(
 
     companion object {
         /** Initial projection only. Later saves must advance the observed version to retain ancestry. */
-        fun fromSnapshot(snapshot: ProgressSnapshot, tutorials: List<TutorialCompletion> = emptyList()): CloudProgress {
+        fun fromSnapshot(snapshot: ProgressSnapshot, tutorials: List<TutorialCompletion> = snapshot.tutorialCompletions): CloudProgress {
             require(snapshot.schemaVersion == 1) { "Unsupported local progress schema" }
             val account = requireNotNull(snapshot.profile.pgsPlayerId) { "Guest-only progress cannot upload" }
             val rounds = snapshot.rounds.groupBy { it.id }.values.map { copies ->
                 require(copies.all { it == copies.first() }) { "Unresolved local round" }
                 copies.first()
             }
-            return CloudProgress(account, listOf(snapshot.profile), snapshot.guestClaims,
-                rounds.map(CloudRoundVersion::initial), tutorials).also { it.validate(account) }
+            val versions = (rounds.map(CloudRoundVersion::initial) + snapshot.outcomes.map(CloudRoundVersion::initial))
+                .groupBy { it.roundId }.values.map { copies ->
+                    require(copies.all { it == copies.first() }) { "Unresolved local outcome" }; copies.first()
+                }
+            return CloudProgress(account, listOf(snapshot.profile) + snapshot.associatedProfiles, snapshot.guestClaims,
+                versions, tutorials).also { it.validate(account) }
         }
     }
 }
@@ -93,6 +97,11 @@ data class CloudRoundVersion(
     }
 
     companion object {
+        fun initial(outcome: OutcomeFact): CloudRoundVersion {
+            outcome.validate()
+            return create(null, outcome, emptySet())
+        }
+
         fun initial(record: RoundRecord): CloudRoundVersion {
             record.validate()
             return create(record.takeUnless { it.status.isTerminal },

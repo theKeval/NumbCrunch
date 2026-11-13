@@ -23,7 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import io.keval.apps.numbcrunch.core.ui.artwork.rememberArtworkPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -36,17 +36,22 @@ import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOrangeTop
 import io.keval.apps.numbcrunch.domain.connection.ConnectionStatus
 import io.keval.apps.numbcrunch.domain.connection.PlayerSession
+import io.keval.apps.numbcrunch.gameplay.engagement.AchievementsRoute
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.game.WoodPanel
+import io.keval.apps.numbcrunch.gameplay.cloud.CloudBackupRoute
 
 /** Place on Home or the player screen; the Activity supplies lifecycle-bound Google actions. */
 @Composable
-fun PlayGamesConnectionRoute(modifier: Modifier = Modifier) {
+fun PlayGamesConnectionRoute(modifier: Modifier = Modifier, onLeaderboard: () -> Unit = {}) {
     val binding = LocalPlayerConnection.current ?: return
     val session by binding.session.collectAsStateWithLifecycle()
     LaunchedEffect(binding.session) { binding.refreshLocal() }
-    PlayGamesConnectionCard(session, binding.connect, binding.refresh, binding.selectGuest,
-        binding.selectAccount, binding.importGuest, modifier)
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        PlayGamesConnectionCard(session, binding.connect, binding.refresh, binding.selectGuest,
+            binding.selectAccount, binding.importGuest, onLeaderboard = onLeaderboard)
+        CloudBackupRoute()
+    }
 }
 
 @Composable
@@ -58,6 +63,7 @@ fun PlayGamesConnectionCard(
     onSelectAccount: () -> Unit,
     onImportGuest: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onLeaderboard: () -> Unit = {},
 ) {
     var confirmingAccount by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(session.connectedAccountId) {
@@ -76,14 +82,14 @@ fun PlayGamesConnectionCard(
     WoodPanel(R.drawable.game_keypad_wood, NumbCrunchChocolateDark.copy(alpha = 0.88f), modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Image(painterResource(R.drawable.play_games_controller), contentDescription = null, modifier = Modifier.size(32.dp))
+                Image(rememberArtworkPainter(R.drawable.play_games_controller), contentDescription = null, modifier = Modifier.size(32.dp))
                 Text(stringResource(R.string.play_games_title), color = NumbCrunchGoldCream,
                     fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 if (session.busy) CircularProgressIndicator(Modifier.size(20.dp), color = NumbCrunchGoldCream, strokeWidth = 2.dp)
             }
             Text(statusText, color = NumbCrunchGoldCream,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-            Text(stringResource(R.string.play_games_device_only), color = NumbCrunchGoldCream,
+            Text(stringResource(R.string.play_games_progress_note), color = NumbCrunchGoldCream,
                 style = MaterialTheme.typography.bodyMedium)
             if (session.selectedProfile != null) {
                 Text(stringResource(if (session.selectedProfile?.pgsPlayerId == null)
@@ -116,6 +122,10 @@ fun PlayGamesConnectionCard(
                 TextButton(onClick = onRefresh, enabled = !session.busy, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.play_games_refresh), color = NumbCrunchGoldCream)
                 }
+            }
+            AchievementsRoute()
+            TextButton(onClick = onLeaderboard, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.hard_board_title), color = NumbCrunchGoldCream)
             }
         }
     }

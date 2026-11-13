@@ -1,5 +1,7 @@
 package io.keval.apps.numbcrunch.gameplay.game
 
+import androidx.compose.foundation.layout.heightIn
+
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
@@ -58,7 +60,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import io.keval.apps.numbcrunch.core.ui.artwork.rememberArtworkPainter
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -138,6 +140,7 @@ fun GameRoute(
     roundId: String? = null,
     onRequestNewRound: (NewRoundRequest) -> Unit = {},
     modifier: Modifier = Modifier,
+    onLeaderboardClick: () -> Unit = {},
 ) {
     val viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(friendSecretNumber, difficulty, progressRepository, ownerId, roundId))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -169,8 +172,33 @@ fun GameRoute(
         onWinHome = onExitToHome,
         onDismissWinDialog = viewModel::onDismissWinDialog,
         modifier = modifier,
+        onLeaderboardClick = { viewModel.onDismissWinDialog(); onLeaderboardClick() },
     )
-    if (uiState.hasPersistenceError) {
+    if (uiState.roundRecovery != null) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.progress_changed_title)) },
+            text = { Text(stringResource(when {
+                uiState.hasPersistenceError -> R.string.progress_reload_failed
+                uiState.roundRecovery == RoundRecovery.COMPLETED -> R.string.progress_completed_elsewhere
+                else -> R.string.progress_updated_elsewhere
+            })) },
+            confirmButton = {
+                if (uiState.roundRecovery == RoundRecovery.UPDATED) TextButton(
+                    onClick = if (uiState.hasPersistenceError) viewModel::onRetryPersistence else viewModel::onReloadChangedRound,
+                    enabled = !uiState.isSaving,
+                ) { Text(stringResource(R.string.progress_reload_saved)) }
+                else TextButton(onClick = onExitToHome, enabled = !uiState.isSaving) {
+                    Text(stringResource(R.string.progress_back_home))
+                }
+            },
+            dismissButton = {
+                if (uiState.roundRecovery == RoundRecovery.UPDATED) TextButton(onClick = onExitToHome, enabled = !uiState.isSaving) {
+                    Text(stringResource(R.string.progress_back_home))
+                }
+            },
+        )
+    } else if (uiState.hasPersistenceError) {
         AlertDialog(
             onDismissRequest = viewModel::onDismissPersistenceError,
             title = { Text(stringResource(R.string.progress_save_failed_title)) },
@@ -212,6 +240,7 @@ fun GameScreen(
     onDismissWinDialog: () -> Unit,
     onSaveAndPause: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onLeaderboardClick: (() -> Unit)? = null,
 ) {
     var remarkInfo by remember { mutableStateOf<GuessEvaluation?>(null) }
     GuessResultFeedback(uiState)
@@ -223,7 +252,7 @@ fun GameScreen(
             .swipeToGoBack(enabled = remarkInfo == null, offset = swipeOffset, onSwipe = onBack),
     ) {
         Image(
-            painter = painterResource(id = R.drawable.home_background),
+            painter = rememberArtworkPainter(id = R.drawable.home_background),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
@@ -368,6 +397,7 @@ fun GameScreen(
                 onPlayAgain = onPlayAgain,
                 onHome = onWinHome,
                 onDismiss = onDismissWinDialog,
+                onLeaderboard = onLeaderboardClick,
             )
         }
     }
@@ -435,7 +465,7 @@ private fun GameHeader(
             contentAlignment = Alignment.Center,
         ) {
             Image(
-                painter = painterResource(id = R.drawable.home_title),
+                painter = rememberArtworkPainter(id = R.drawable.home_title),
                 contentDescription = stringResource(R.string.cd_game_title),
                 modifier = Modifier
                     .width(metrics.titleWidth)
@@ -887,6 +917,7 @@ private fun WinDialog(
     onPlayAgain: () -> Unit,
     onHome: () -> Unit,
     onDismiss: () -> Unit,
+    onLeaderboard: (() -> Unit)?,
 ) {
     val guessCount = uiState.guesses.size
     val player = LocalGameSoundPlayer.current
@@ -909,7 +940,7 @@ private fun WinDialog(
                 .pointerInput(Unit) { detectTapGestures { onDismiss() } },
             contentAlignment = Alignment.Center,
         ) {
-            WinDialogCard(uiState, guessCount, onPlayAgain, onHome)
+            WinDialogCard(uiState, guessCount, onPlayAgain, onHome, onLeaderboard)
             ConfettiBurst(modifier = Modifier.fillMaxSize())
         }
     }
@@ -921,6 +952,7 @@ private fun WinDialogCard(
     guessCount: Int,
     onPlayAgain: () -> Unit,
     onHome: () -> Unit,
+    onLeaderboard: (() -> Unit)?,
 ) {
     val pop = remember { Animatable(0.6f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 380f)) }
@@ -950,6 +982,11 @@ private fun WinDialogCard(
                 primaryText = stringResource(R.string.win_play_again),
                 onPrimary = onPlayAgain,
             )
+            if (uiState.difficulty == Difficulty.HARD && onLeaderboard != null) {
+                TextButton(onClick = onLeaderboard, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.hard_board_title), color = NumbCrunchGoldCream)
+                }
+            }
         } else {
             KeypadKey(
                 label = stringResource(R.string.win_home),

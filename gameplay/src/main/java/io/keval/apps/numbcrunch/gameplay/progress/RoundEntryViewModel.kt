@@ -139,7 +139,7 @@ class RoundEntryViewModel(
             require(record.ownerId == saved.ownerId) { "Saved round ownership changed" }
             require(!record.status.isTerminal) { "Round already completed" }
             val active = if (record.status == RoundStatus.PAUSED) {
-                repository.updateRound(record.resume(now()), record.revision)
+                repository.updateRound(record.resume(now()), record)
             } else record
             ready(active)
         }
@@ -162,7 +162,7 @@ class RoundEntryViewModel(
             val selected = repository.selectedProfile()
             val record = requireNotNull(repository.findRound(selected.id, target.id)) { "Saved round unavailable" }
             require(record.ownerId == target.ownerId) { "Saved round ownership changed" }
-            if (!record.status.isTerminal) repository.updateRound(record.finish(RoundStatus.ABANDONED, now()), record.revision)
+            if (!record.status.isTerminal) repository.updateRound(record.finish(RoundStatus.ABANDONED, now()), record)
             _uiState.value = _uiState.value.copy(abandonTarget = null)
             // A claimed guest can retain another unfinished round. Each needs its own explicit choice.
             if (pendingRequest != null) startOrChoose()

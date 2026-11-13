@@ -7,7 +7,7 @@
     <string name="statistics_error_message">Couldn’t read your saved progress. Your games are still stored on this device. Try again.</string>
     <string name="statistics_guest">Local player</string>
     <string name="statistics_player">Play Games player</string>
-    <string name="statistics_device_storage">These statistics are stored on this device. Play Games connection does not back them up yet.</string>
+    <string name="statistics_device_storage">These statistics include progress saved on this device and restored for this player. Play Games backup status is shown on Home.</string>
     <string name="statistics_recorded_since">Recorded since %1$s</string>
     <string name="statistics_no_history">Play before statistics tracking began is not included.</string>
     <string name="statistics_filter_title">Your view</string>

@@ -151,7 +151,7 @@
     <string name="about_version">Version %1$s</string>
     <string name="about_version_unknown">unavailable</string>
     <string name="about_privacy_title">Your privacy</string>
-    <string name="about_privacy_body">You can play offline. Google Play Games can sign you in with your existing profile. Your game settings and rounds stay on your device.</string>
+    <string name="about_privacy_body">Play offline with local statistics, or connect Play Games for cloud saves, achievements, Game Stats, and Hard solo rankings. Your selected connected player shares progress with Google.</string>
     <string name="about_privacy_action">PRIVACY POLICY</string>
     <!-- Privacy policy -->
     <string name="label_privacy_policy">PRIVACY POLICY</string>

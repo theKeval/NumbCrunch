@@ -31,7 +31,7 @@ class ProgressDatabaseTest {
         for (next in listOf<(RoundRecord) -> RoundRecord>(
             { it.editInput("527", 2) }, { it.submitGuess(2) }, { it.useHint(0, 3) },
             { it.editInput("8", 4) }, { it.pause(5) },
-        )) saved = repository.updateRound(next(saved), saved.revision)
+        )) saved = repository.updateRound(next(saved), saved)
         assertEquals(played, saved)
         repository.close()
         repository = SqliteProgressRepository(context, name)
@@ -47,25 +47,25 @@ class ProgressDatabaseTest {
 
     @Test fun firstGuessFailureRollsBackAndRetryCommitsOnce() = runBlocking {
         val created = create()
-        val input = repository.updateRound(created.editInput("527", 2), 0)
+        val input = repository.updateRound(created.editInput("527", 2), created)
         context.openOrCreateDatabase(name, 0, null).use { db ->
             db.execSQL("CREATE TRIGGER fail_guess BEFORE UPDATE ON rounds WHEN NEW.started_at IS NOT NULL BEGIN SELECT RAISE(ABORT, 'injected write failure'); END")
         }
         val submitted = input.submitGuess(3)
-        assertTrue(runCatching { repository.updateRound(submitted, input.revision) }.isFailure)
+        assertTrue(runCatching { repository.updateRound(submitted, input) }.isFailure)
         assertEquals(input, repository.findRound(input.ownerId, input.id))
         assertEquals(0L, repository.exportProgress(input.ownerId).statistics.played)
         context.openOrCreateDatabase(name, 0, null).use { it.execSQL("DROP TRIGGER fail_guess") }
-        repository.updateRound(submitted, input.revision)
-        repository.updateRound(submitted, input.revision)
+        repository.updateRound(submitted, input)
+        repository.updateRound(submitted, input)
         assertEquals(1L, repository.exportProgress(input.ownerId).statistics.played)
     }
 
     @Test fun winQuitRaceHasOneOutcomeAndOwnerIsolation() = runBlocking {
         val created = create()
-        val input = repository.updateRound(created.editInput("573", 2), 0)
+        val input = repository.updateRound(created.editInput("573", 2), created)
         val results = listOf(input.submitGuess(3), input.finish(RoundStatus.GIVEN_UP, 3)).map { candidate ->
-            async { runCatching { repository.updateRound(candidate, input.revision) } }
+            async { runCatching { repository.updateRound(candidate, input) } }
         }.awaitAll()
         assertEquals(1, results.count { it.isSuccess })
         assertEquals(1, results.count { it.isFailure })

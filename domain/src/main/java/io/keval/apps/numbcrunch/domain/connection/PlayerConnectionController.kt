@@ -157,7 +157,9 @@ class PlayerConnectionController(private val progress: ProgressRepository) {
     private suspend fun updateLocalState() {
         val selected = progress.selectedProfile()
         val guest = progress.guestProfile()
-        val hasGuestProgress = progress.exportProgress(guest.id).rounds.isNotEmpty()
+        val guestProgress = progress.exportProgress(guest.id)
+        val hasGuestProgress = guestProgress.rounds.isNotEmpty() || guestProgress.outcomes.isNotEmpty() ||
+            guestProgress.tutorialCompletions.isNotEmpty()
         mutableSession.value = mutableSession.value.copy(
             selectedProfile = selected, unclaimedGuest = guest.takeIf { hasGuestProgress }, localError = false,
         )

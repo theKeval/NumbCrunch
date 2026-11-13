@@ -36,7 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import io.keval.apps.numbcrunch.core.ui.artwork.rememberArtworkPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -83,6 +83,7 @@ fun HomeRoute(
     progressLoadFailed: Boolean = false,
     onRetryProgress: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onLeaderboardClick: () -> Unit = {},
 ) {
     val viewModel: HomeViewModel = viewModel(
         factory = HomeViewModel.factory(getWelcomeMessageUseCase),
@@ -111,6 +112,7 @@ fun HomeRoute(
         progressLoadFailed = progressLoadFailed,
         onRetryProgress = onRetryProgress,
         modifier = modifier,
+        onLeaderboardClick = onLeaderboardClick,
     )
 }
 
@@ -132,6 +134,7 @@ fun HomeScreen(
     progressLoadFailed: Boolean = false,
     onRetryProgress: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onLeaderboardClick: () -> Unit = {},
 ) {
     // The friend-secret keypad sheet; it opens by itself when Double Player is chosen.
     var secretSheetOpen by rememberSaveable { mutableStateOf(false) }
@@ -154,7 +157,7 @@ fun HomeScreen(
 
     Surface(modifier = modifier.fillMaxSize()) {
         val scrollState = rememberScrollState()
-        val titlePainter = painterResource(id = R.drawable.home_title)
+        val titlePainter = rememberArtworkPainter(id = R.drawable.home_title)
         val intrinsicSize = titlePainter.intrinsicSize
         val titleAspectRatio = if (intrinsicSize.height > 0f) {
             intrinsicSize.width / intrinsicSize.height
@@ -217,7 +220,7 @@ fun HomeScreen(
             val betweenControls = betweenControlsBase * scale
 
             Image(
-                painter = painterResource(id = R.drawable.home_background),
+                painter = rememberArtworkPainter(id = R.drawable.home_background),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
@@ -280,7 +283,7 @@ fun HomeScreen(
                         onStatisticsClick = onStatisticsClick,
                     )
 
-                    PlayGamesConnectionRoute(Modifier.widthIn(max = 420.dp).padding(top = 16.dp))
+                    PlayGamesConnectionRoute(Modifier.widthIn(max = 420.dp).padding(top = 16.dp), onLeaderboardClick)
 
                     Spacer(modifier = Modifier.height(gapAfterControls))
                 }

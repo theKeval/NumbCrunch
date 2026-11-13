@@ -23,14 +23,17 @@ Each refresh clears delivery eligibility before asynchronous authentication.
 The controller generation rejects late callbacks, and the Android adapter
 rechecks the player ID after loading their profile. Consumers must capture the
 `PlayerSession.generation` and `connectedAccountId`, then recheck both before
-applying callbacks or delivering account-specific queued work. No delivery
-worker is enabled by this ticket. Noninteractive checks run on resume and do not
+applying callbacks or delivering account-specific queued work. Cloud backup,
+achievements, Game Stats and leaderboard adapters enforce their captured account
+and generation. Cloud-dependent delivery also requires the exact reconciliation
+coverage described in [Cloud backup](cloud-backup.md).
+Noninteractive checks run on resume and do not
 open profile creation. Manual requests are debounced, bounded by a timeout, and
 cancelled when their Activity is destroyed.
 
 ## Durable ownership
 
-SQLite schema 2 adds `guest_claims`; the schema 1 migration preserves all
+SQLite schema 2 introduced `guest_claims`; later cloud/outbox schemas preserve all
 existing profiles, rounds and metadata. The selected local profile is persisted
 in the same database. Authentication failure does not select or create a
 replacement guest. A change from Google account A to B selects B's local
@@ -39,9 +42,11 @@ An already-open round continues using its original `ownerId`.
 
 An explicit guest claim stores `(guestProfileId, accountProfileId, claimedAt)`.
 It is idempotent for the same account and rejected for another account. It does
-not rewrite IDs/owners, copy rounds, send events, or enable cloud backup.
+not rewrite IDs/owners, copy rounds, or send historical Game Stats events.
+When that connected account is selected, the claimed history participates in
+cloud backup and reconciled achievements/leaderboard totals.
 Account-scoped reads and `ProgressSnapshot` include the claimed namespace;
-`guestClaims` and `ownerIds` preserve provenance for future cloud reconciliation.
+`guestClaims` and `ownerIds` preserve provenance through cloud reconciliation.
 A later guest profile is separate, so claimed progress cannot be claimed again.
 
 When both namespaces contain unfinished rounds, both remain available through

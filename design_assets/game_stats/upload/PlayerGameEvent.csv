@@ -1,0 +1,8 @@
+Event Name,Property Name,Property Type
+roundCompleted_v1,playerMode,STRING
+roundCompleted_v1,difficulty,STRING
+roundCompleted_v1,outcome,STRING
+roundCompleted_v1,guessCount,INT64
+roundCompleted_v1,hintUsed,BOOL
+roundCompleted_v1,hardSoloWin,BOOL
+roundCompleted_v1,unaidedMediumSoloWin,BOOL

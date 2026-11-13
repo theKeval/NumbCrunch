@@ -15,6 +15,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOrangeTop
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchTheme
+import io.keval.apps.numbcrunch.domain.tutorial.TutorialEvidence
 import io.keval.apps.numbcrunch.domain.game.GuessRules
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.common.FitToHeight
@@ -70,18 +72,24 @@ fun TutorialScreen(
     onCompleteFirstRun: () -> Unit = onBack,
     isCompletingFirstRun: Boolean = false,
     firstRunCompletionError: Boolean = false,
+    onFinishTutorial: (TutorialEvidence) -> Unit = { if (isFirstRun) onCompleteFirstRun() else onPlay() },
 ) {
     val pagerState = rememberPagerState(pageCount = { TUTORIAL_PAGE_COUNT })
     val scope = rememberCoroutineScope()
     val page by remember { derivedStateOf { pagerState.currentPage } }
     var input by rememberSaveable { mutableStateOf("") }
     var submitted by rememberSaveable { mutableStateOf("") }
+    var visitedPages by rememberSaveable { mutableIntStateOf(0) }
+    var practiceSolved by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(pagerState.settledPage) {
+        visitedPages = TutorialEvidence(visitedPages, practiceSolved).visit(pagerState.settledPage).visitedPages
+    }
     val evaluation = remember(submitted) {
         submitted.takeIf(GuessRules::isValidCode)?.let { GuessRules.evaluate(LearningExamples.SECRET, it) }
     }
 
     val back: () -> Unit = {
-        if (page > 0) {
+        if (isCompletingFirstRun) Unit else if (page > 0) {
             scope.launch { pagerState.scrollToPage(page - 1) }
             Unit
         } else if (isFirstRun) {
@@ -93,7 +101,7 @@ fun TutorialScreen(
     BackHandler(onBack = back)
     // The header back button leaves the tutorial from any page (first run counts as done, like
     // Skip); the footer BACK button and system Back step through the pages.
-    val exit: () -> Unit = { if (isFirstRun) onCompleteFirstRun() else onBack() }
+    val exit: () -> Unit = { if (!isCompletingFirstRun) { if (isFirstRun) onCompleteFirstRun() else onBack() } }
 
     GuideScaffold(
         title = stringResource(R.string.label_tutorial),
@@ -149,7 +157,7 @@ fun TutorialScreen(
                     stringResource(actionText),
                     onClick = {
                         if (isLastPage) {
-                            if (isFirstRun) onCompleteFirstRun() else onPlay()
+                            onFinishTutorial(TutorialEvidence(visitedPages, practiceSolved))
                         } else {
                             scope.launch { pagerState.scrollToPage(page + 1) }
                         }
@@ -171,6 +179,7 @@ fun TutorialScreen(
                     input,
                     onInputChange = { input = it },
                     onSubmit = {
+                        practiceSolved = TutorialEvidence(visitedPages, practiceSolved).submit(input).practiceSolved
                         submitted = input
                         input = ""
                     },

@@ -24,6 +24,7 @@ import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOrangeTop
 import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.progress.*
+import io.keval.apps.numbcrunch.gameplay.engagement.AchievementsRoute
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.common.*
 import io.keval.apps.numbcrunch.gameplay.connection.LocalPlayerConnection
@@ -34,14 +35,15 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun StatisticsRoute(repository: ProgressRepository, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun StatisticsRoute(repository: ProgressRepository, onBack: () -> Unit, modifier: Modifier = Modifier,
+    onLeaderboardClick: () -> Unit = {}) {
     val viewModel: StatisticsViewModel = viewModel(factory = StatisticsViewModel.factory(repository))
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val binding = LocalPlayerConnection.current
     val session = binding?.session?.collectAsStateWithLifecycle()?.value
     val name = session?.takeIf { it.status == ConnectionStatus.CONNECTED && it.accountProfile?.id == state.profile?.id }
         ?.player?.displayName
-    StatisticsScreen(state, onBack, viewModel::selectMode, viewModel::selectDifficulty, viewModel::refresh, name, modifier)
+    StatisticsScreen(state, onBack, viewModel::selectMode, viewModel::selectDifficulty, viewModel::refresh, name, modifier, onLeaderboardClick)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -54,6 +56,7 @@ fun StatisticsScreen(
     onRetry: () -> Unit,
     playerName: String? = null,
     modifier: Modifier = Modifier,
+    onLeaderboardClick: () -> Unit = {},
 ) {
     val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.getDefault()
     val counts = remember(locale) { NumberFormat.getIntegerInstance(locale) }
@@ -73,6 +76,7 @@ fun StatisticsScreen(
                     if (state.profile?.pgsPlayerId == null) R.string.statistics_guest else R.string.statistics_player,
                 )
                 GuidePanel(profileLabel) {
+                    GuideAction(stringResource(R.string.hard_board_title), onLeaderboardClick, Modifier.fillMaxWidth())
                     GuideBody(stringResource(R.string.statistics_device_storage))
                     state.recordedSince?.let { GuideBody(stringResource(R.string.statistics_recorded_since, dates.format(Date(it)))) }
                     GuideBody(stringResource(R.string.statistics_no_history))
@@ -116,6 +120,7 @@ fun StatisticsScreen(
                     if (stats.wins == 0L) GuideBody(stringResource(R.string.statistics_no_wins))
                     GuideBody(stringResource(R.string.statistics_average_help))
                 }
+                AchievementsRoute()
                 GuidePanel(stringResource(R.string.statistics_streaks_title)) {
                     Metric(R.string.statistics_current_streak, counts.format(stats.currentWinStreak))
                     Metric(R.string.statistics_best_streak, counts.format(stats.bestWinStreak))
@@ -133,7 +138,9 @@ private fun modeLabel(mode: RoundMode) = stringResource(
 
 @Composable
 private fun StatFilter(text: String, selected: Boolean, onClick: () -> Unit) {
-    FilterChip(selected = selected, onClick = onClick, label = { Text(text) }, modifier = Modifier.heightIn(min = 48.dp))
+    FilterChip(selected = selected, onClick = onClick, label = { Text(text) },
+        colors = woodFilterChipColors(), border = woodFilterChipBorder(selected),
+        modifier = Modifier.heightIn(min = 48.dp))
 }
 
 @Composable

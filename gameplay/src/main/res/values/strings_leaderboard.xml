@@ -1,0 +1,27 @@
+<resources>
+    <string name="hard_board_rank_description">Rank %1$s. %2$s. Hard wins: %3$s.</string>
+    <string name="hard_board_rank_unavailable">not available</string>
+    <string name="hard_board_title">Lifetime Hard wins</string>
+    <string name="hard_board_all_time">All time · Single Player · Hard</string>
+    <string name="hard_board_rules">Only Single Player Hard wins count. Pausing does not affect your score. Every eligible win counts once; higher totals rank first.</string>
+    <string name="hard_board_trust">An accomplishments leaderboard based on recorded wins. Scores are reported by the game and are not independently verified.</string>
+    <string name="hard_board_local_loading">Your recorded total is not available yet. Retry if it does not appear.</string>
+    <string name="hard_board_local_total">Your recorded Hard wins: %1$s</string>
+    <string name="hard_board_no_wins">No Hard wins yet. Solve a Single Player Hard round to begin.</string>
+    <string name="hard_board_local_only">Your local progress is available offline.</string>
+    <string name="hard_board_waiting">Waiting for backup reconciliation before updating your score. Resolve any saved-game choices on Home.</string>
+    <string name="hard_board_pending">Score update pending. Your recorded wins are safe on this device.</string>
+    <string name="hard_board_acknowledged">Play Games acknowledged your score. Rankings may take time to update and retain your highest submitted total.</string>
+    <string name="hard_board_retry_score">Retry score update</string>
+    <string name="hard_board_connect">Connect to Play Games and select your connected player on Home to view rankings. You can keep playing offline.</string>
+    <string name="hard_board_top">Top 25</string>
+    <string name="hard_board_near">Near me</string>
+    <string name="hard_board_loading">Loading all-time rankings…</string>
+    <string name="hard_board_error">Rankings are unavailable right now. Your local wins have not changed.</string>
+    <string name="hard_board_cached">Showing previously loaded rankings. They may be out of date.</string>
+    <string name="hard_board_your_rank">Your public standing</string>
+    <string name="hard_board_unranked">No public rank is available. A private profile or a score still being processed may not appear.</string>
+    <string name="hard_board_empty">No public entries are available in this view yet.</string>
+    <string name="hard_board_refresh">Refresh rankings</string>
+    <string name="hard_board_unknown_player">Play Games player</string>
+</resources>

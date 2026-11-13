@@ -100,4 +100,20 @@ class StatisticsViewModelTest {
         assertFalse(vm.uiState.value.isLoading)
         assertEquals(StatisticsFilter(RoundMode.DOUBLE), vm.uiState.value.filter)
     }
+
+    @Test fun `restored outcome receipts count once with local copies and keep their namespace`() = runBlocking {
+        val repository = TestProgressRepository()
+        val account = repository.activatePlayerProfile("player")
+        repository.associated.value = listOf(PlayerProfile("remote-profile", "player", 1))
+        val local = win("local", 4).copy(ownerId = account.id)
+        val remote = win("remote", 7).copy(ownerId = "remote-profile")
+        repository.records.value = listOf(local)
+        repository.outcomes.value = listOf(OutcomeFact.fromRound(local), OutcomeFact.fromRound(remote))
+        val vm = StatisticsViewModel(repository, SavedStateHandle())
+        assertEquals(2L, vm.uiState.value.statistics.wins)
+        assertEquals(5.5, vm.uiState.value.statistics.averageWinningGuesses!!, 0.0)
+        assertEquals(0L, vm.uiState.value.ongoing)
+        vm.selectMode(RoundMode.DOUBLE)
+        assertEquals(0L, vm.uiState.value.statistics.played)
+    }
 }

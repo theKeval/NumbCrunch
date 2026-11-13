@@ -31,7 +31,7 @@ class StatisticsScreenTest {
 
     @Test fun weightedAverageAndNoWinEmptyValuesHaveReadableLabels() {
         compose.setContent {
-            NumbCrunchTheme {
+            NumbCrunchTheme(darkTheme = false, dynamicColor = false) {
                 StatisticsScreen(base.copy(statistics = PlayerStatistics(played = 3, wins = 3, winningGuessSum = 21)),
                     {}, {}, {}, {})
             }
@@ -43,7 +43,7 @@ class StatisticsScreenTest {
     }
 
     @Test fun noWinsShowsDashAndExplanationInsteadOfZeroAverage() {
-        compose.setContent { NumbCrunchTheme { StatisticsScreen(base, {}, {}, {}, {}) } }
+        compose.setContent { NumbCrunchTheme(darkTheme = false, dynamicColor = false) { StatisticsScreen(base, {}, {}, {}, {}) } }
         compose.onNode(hasText(context.getString(R.string.statistics_average)) and hasText("—"))
             .performScrollTo().assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.statistics_no_wins)).performScrollTo().assertIsDisplayed()
@@ -52,7 +52,7 @@ class StatisticsScreenTest {
     @Test fun longNameAndLargeCountsRemainReachableAtLargeTextOnCompactScreen() {
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 2f)) {
-                NumbCrunchTheme {
+                NumbCrunchTheme(darkTheme = false, dynamicColor = false) {
                     Box(Modifier.size(320.dp, 480.dp)) {
                         StatisticsScreen(base.copy(statistics = PlayerStatistics(played = Long.MAX_VALUE)), {}, {}, {}, {},
                             playerName = "A player with a very long gamer name that wraps across several lines")

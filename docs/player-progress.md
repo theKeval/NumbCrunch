@@ -11,8 +11,8 @@ practice is isolated; its normal Play Now route starts a real round.
 A profile has an opaque local UUID, a statistics tracking start time and an
 optional unique Play Games player association. The association is not a
 NumbCrunch account or primary key. Round ownership never changes. Guest and
-associated profiles have separate namespaces; account claiming/switching belongs
-to the subsequent connection and synchronization work.
+associated profiles have separate namespaces; confirmed guest claims preserve
+the original owner and are included in account-scoped cloud reconciliation.
 
 Each round has a UUID, immutable owner, mode, difficulty, rules version and
 origin. Ordered guesses, input, hint occurrence, outcome and revision commit
@@ -54,13 +54,14 @@ Completion time followed by round ID defines deterministic streak ordering;
 unfinished rounds do not interrupt a streak. Duplicate identical imports count
 once; conflicting copies reject the entire import transaction.
 
-Schema 1 retains all rounds; it performs no destructive migration or pruning.
+Schema 4 retains local rounds and redacted completed facts restored from cloud;
+its migrations preserve existing data without destructive pruning.
 `exportProgress` provides a versioned snapshot with tracking start date, complete
 round records and a recomputable aggregate. Cloud backup work must define an
-acknowledged checkpoint/compaction protocol before deleting history. No delivery
-ledger or cloud transfer is active in this ticket. Progress databases are
+acknowledged checkpoint/compaction protocol before deleting history. The Game Stats outbox is local-only and does not replay imported history.
+Progress databases are
 excluded from Android backup and device transfer to avoid restoring identities
-or future delivery state independently of progress. Settings and tutorial backup
+or delivery state independently of progress. Settings and first-run backup
 remain enabled. Clearing app data deletes local statistics.
 
 Never log round secrets or guesses, or place them in navigation parameters or

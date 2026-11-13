@@ -1,0 +1,7 @@
+<resources>
+    <string name="progress_changed_title">Saved game changed</string>
+    <string name="progress_updated_elsewhere">A newer saved version of this game is available. Your last action was not applied. Reload the saved game to continue, or return Home. Your current view will stay here until you choose.</string>
+    <string name="progress_completed_elsewhere">This game was completed in your synced progress. Your last action was not applied. Return Home to view the updated statistics.</string>
+    <string name="progress_reload_failed">The saved game could not be loaded. Try again or return Home. Your current view has not changed.</string>
+    <string name="progress_reload_saved">Reload saved game</string>
+</resources>

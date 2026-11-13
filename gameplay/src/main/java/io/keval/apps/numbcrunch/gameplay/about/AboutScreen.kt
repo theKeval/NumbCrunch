@@ -8,7 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.res.painterResource
+import io.keval.apps.numbcrunch.core.ui.artwork.rememberArtworkPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,7 +34,7 @@ fun AboutScreen(
     }
     GuideScaffold(stringResource(R.string.label_about), onBack, modifier) {
         Image(
-            painterResource(R.drawable.home_title), stringResource(R.string.cd_game_title),
+            rememberArtworkPainter(R.drawable.home_title), stringResource(R.string.cd_game_title),
             Modifier.fillMaxWidth().height(120.dp),
         )
         GuidePanel(stringResource(R.string.about_story_title)) {

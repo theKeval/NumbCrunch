@@ -45,7 +45,7 @@ class PlayerOwnershipDatabaseTest {
         assertTrue(runCatching { repository.selectProfile(guest.id) }.isFailure)
         assertNull(repository.findRound(b.id, guestRound.id))
         assertEquals(guestRound, repository.findRound(a.id, guestRound.id))
-        val updated = repository.updateRound(guestRound.editInput("9", 11), guestRound.revision)
+        val updated = repository.updateRound(guestRound.editInput("9", 11), guestRound)
         assertEquals(guest.id, updated.ownerId)
         repository.close()
         repository = SqliteProgressRepository(context, name)
@@ -77,6 +77,7 @@ class PlayerOwnershipDatabaseTest {
         val saved = repository.createRound(round("saved", guest.id))
         repository.close()
         context.openOrCreateDatabase(name, 0, null).use { db ->
+            for (table in listOf("game_stats_outbox", "cloud_chunks", "cloud_manifests", "tutorial_completions", "cloud_outcomes", "remote_namespaces")) db.execSQL("DROP TABLE IF EXISTS $table")
             db.execSQL("DROP TABLE guest_claims")
             db.version = 1
         }

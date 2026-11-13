@@ -69,7 +69,7 @@ class GameViewModel(
             val candidate = initialRound ?: newRound(ownerId, requestedDifficulty).also { initialRound = it }
             repository.createRound(candidate)
         }
-        val active = if (loaded.status == RoundStatus.PAUSED) repository.updateRound(loaded.resume(now()), loaded.revision) else loaded
+        val active = if (loaded.status == RoundStatus.PAUSED) repository.updateRound(loaded.resume(now()), loaded) else loaded
         showCommitted(active)
         // A durable round ID is the only game fact Android's saved-state bundle keeps after migration.
         LEGACY_KEYS.forEach { savedStateHandle.remove<Any>(it) }
@@ -96,6 +96,7 @@ class GameViewModel(
 
     fun onBackRequested(): Boolean {
         val state = _uiState.value
+        if (state.roundRecovery != null && !state.isSaving) return true
         if (state.hasPersistenceError && round == null && !state.isSaving) return true
         if (state.isSaving || state.isLoading || state.hasPersistenceError) return false
         if (state.isRoundOver) return true
@@ -150,14 +151,57 @@ class GameViewModel(
         _uiState.value = _uiState.value.copy(hasPersistenceError = false, showExitConfirmation = false)
     }
 
+    /** Explicitly load the saved successor; the stale on-screen input is kept until this choice. */
+    fun onReloadChangedRound() {
+        if (_uiState.value.roundRecovery != RoundRecovery.UPDATED || _uiState.value.isSaving) return
+        launchWrite {
+            val previous = round ?: return@launchWrite
+            val latest = repository.findRound(previous.ownerId, previous.id)
+            if (latest == null) {
+                if (!recoverChangedRound(previous)) throw RoundConflictException()
+            } else {
+                try {
+                    val active = if (latest.status == RoundStatus.PAUSED) repository.updateRound(latest.resume(now()), latest) else latest
+                    showCommitted(active)
+                } catch (conflict: RoundConflictException) {
+                    if (!recoverChangedRound(latest)) throw conflict
+                }
+            }
+        }
+    }
+
     private fun mutate(onSaved: (() -> Unit)? = null, action: (RoundRecord) -> RoundRecord?) = launchWrite {
+        if (_uiState.value.roundRecovery != null) return@launchWrite
         val previous = round ?: return@launchWrite
         val candidate = action(previous) ?: return@launchWrite
         commitOperation {
-            val committed = repository.updateRound(candidate, previous.revision)
-            showCommitted(committed, revealLastGuess = committed.guesses.size > previous.guesses.size)
-            onSaved?.invoke()
+            try {
+                val committed = repository.updateRound(candidate, previous)
+                showCommitted(committed, revealLastGuess = committed.guesses.size > previous.guesses.size)
+                onSaved?.invoke()
+            } catch (conflict: RoundConflictException) {
+                if (!recoverChangedRound(previous)) throw conflict
+            }
         }
+    }
+
+    private suspend fun recoverChangedRound(previous: RoundRecord): Boolean {
+        val latest = repository.findRound(previous.ownerId, previous.id)
+        val recovery = when {
+            latest != null && latest != previous -> RoundRecovery.UPDATED
+            latest == null && repository.exportProgress(previous.ownerId).completedFacts.any {
+                it.id == previous.id && it.ownerId == previous.ownerId
+            } -> RoundRecovery.COMPLETED
+            else -> null
+        } ?: return false
+        showRoundRecovery(recovery)
+        return true
+    }
+
+    private fun showRoundRecovery(recovery: RoundRecovery) {
+        retry = null
+        _uiState.value = _uiState.value.copy(roundRecovery = recovery, hasPersistenceError = false,
+            showExitConfirmation = false, showQuitConfirmation = false, showWinDialog = false)
     }
 
     /** The failed operation is kept intact, so retry cannot generate another round or outcome. */
