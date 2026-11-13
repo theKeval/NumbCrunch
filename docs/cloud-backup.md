@@ -99,6 +99,16 @@ remote namespaces do not replay activity. `CloudBackupCardTest` checks pending
 copy, retry, secret-free conflict controls, cancellation and account changes.
 These fixtures do not prove real cross-device Saved Games behavior.
 
+`LiveCloudRestoreTest` is opt-in and skipped by default. With an already
+authenticated, authorized tester and an existing confirmed backup, run only
+that class with `-Pandroid.testInstrumentationRunnerArguments.liveCloudRestore=true`.
+It uses SDK load/open/discard calls, never commit or conflict resolution, and
+restores into a disposable SQLite database. It verifies facts, exact unfinished
+state, tutorial evidence, statistics and no event replay, then deletes only its
+own temporary database. Counts are logged without IDs or payloads. This proves
+a fresh local-store restore on one device, not an independent second-device
+server restore. An empty archive does not exercise round/hint preservation.
+
 Before release, use two Google Play-enabled installations and the intended
 tester account to confirm initial backup, another-device restore, offline play
 then reconnect, interrupted upload, simultaneous branch resolution, app process
@@ -113,3 +123,21 @@ Official behavior checked 13 November 2026:
 - [SnapshotsClient API semantics](https://developers.google.com/android/reference/com/google/android/gms/games/SnapshotsClient)
 - [Play Games activation](https://support.google.com/googleplay/android-developer/answer/2990418)
 - [Google Play Games data deletion](https://support.google.com/googleplay/answer/9130646)
+
+## Recorded development verification
+
+On 13 November 2026, the integrated debug build on the authorized API 31 tester
+phone authenticated successfully and reached `server_confirmed` after pending
+uploads. Home displayed Saved and a last-backup time. A force-stop/relaunch
+reached server confirmation again without clearing app data.
+
+A normal Single Player Medium game was played through the UI: one guess, the
+single hint spent, one partial input digit, then Save & pause. After the visible
+Saved result, the opt-in read-only fixture with `liveCloudRequirePaused=true`
+downloaded the confirmed archive and imported it twice into a separate temporary
+SQLite database. The exact paused record, hint/input, statistics and ownership
+matched, and no Game Stats event was enqueued. The fixture passed with one
+unfinished round. No secret, ID or snapshot payload was logged. This is evidence
+for real Saved Games plus a fresh local store on one phone; two independent
+Google Play-enabled devices, supervised accounts and actual account A/B isolation
+remain separate release checks.
