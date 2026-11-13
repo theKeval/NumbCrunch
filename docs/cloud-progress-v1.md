@@ -107,7 +107,9 @@ state and local progress.
 
 Do not delete historical chunks merely because one locally cached manifest no
 longer references them: another device or unresolved server conflict may still
-need them. Version 1 has no lossy compaction or automatic garbage collection.
+need them. Version 1 has no lossy compaction or automatic remote garbage collection. Local
+cached chunks may be removed only after no retained state, pending or recovery
+manifest references them.
 Storage/quota exhaustion pauses backup visibly while local play continues.
 Future acknowledged checkpoint/GC work must prove that no valid manifest or
 offline branch loses needed receipts, IDs, or deduplication evidence. Retain
@@ -124,7 +126,8 @@ merge properties, same-round forks, terminal-versus-pause conflicts, account
 and claim validation, multiple unfinished games, redacted round trips,
 deterministic partitioning, corrupt/future/missing files, size bounds, and
 equivalence of local and imported statistics/achievement/leaderboard reducers.
-Device/SDK transaction and retry tests belong to GUESSER-16.
+Device/SDK transaction and retry behavior is described in
+[Cloud backup](cloud-backup.md).
 
 Official limits and API semantics, checked 13 November 2026:
 

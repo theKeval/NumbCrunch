@@ -23,14 +23,17 @@ Each refresh clears delivery eligibility before asynchronous authentication.
 The controller generation rejects late callbacks, and the Android adapter
 rechecks the player ID after loading their profile. Consumers must capture the
 `PlayerSession.generation` and `connectedAccountId`, then recheck both before
-applying callbacks or delivering account-specific queued work. Cloud backup, achievements, Game Stats and leaderboard adapters each enforce
-their own captured account and generation before submission. Noninteractive checks run on resume and do not
+applying callbacks or delivering account-specific queued work. Cloud backup,
+achievements, Game Stats and leaderboard adapters enforce their captured account
+and generation. Cloud-dependent delivery also requires the exact reconciliation
+coverage described in [Cloud backup](cloud-backup.md).
+Noninteractive checks run on resume and do not
 open profile creation. Manual requests are debounced, bounded by a timeout, and
 cancelled when their Activity is destroyed.
 
 ## Durable ownership
 
-SQLite schema 2 adds `guest_claims`; the schema 1 migration preserves all
+SQLite schema 2 introduced `guest_claims`; later cloud/outbox schemas preserve all
 existing profiles, rounds and metadata. The selected local profile is persisted
 in the same database. Authentication failure does not select or create a
 replacement guest. A change from Google account A to B selects B's local

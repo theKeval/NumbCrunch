@@ -56,6 +56,11 @@ class AndroidSavedGamesGateway(
                             val bundle = withContext(Dispatchers.Default) { CloudCodec.encode(current) }
                             stage = "write_chunks"
                             writeChunks(bundle, maxFileSize)
+                            stage = "confirm_chunks"
+                            if (!confirmUploaded(bundle, includeRoot = false)) {
+                                diagnostic(stage, "pending")
+                                return@withTimeoutOrNull CloudWriteResult(current, false)
+                            }
                             checkSnapshotAccount(server); checkSnapshotAccount(other)
                             require(bundle.manifest.size <= maxFileSize)
                             check(withContext(Dispatchers.IO) { conflict.resolutionSnapshotContents.writeBytes(bundle.manifest) }) { "Snapshot write failed" }
@@ -71,6 +76,11 @@ class AndroidSavedGamesGateway(
                             val bundle = withContext(Dispatchers.Default) { CloudCodec.encode(current) }
                             stage = "write_chunks"
                             writeChunks(bundle, maxFileSize)
+                            stage = "confirm_chunks"
+                            if (!confirmUploaded(bundle, includeRoot = false)) {
+                                diagnostic(stage, "pending")
+                                return@withTimeoutOrNull CloudWriteResult(current, false)
+                            }
                             checkSnapshotAccount(snapshot)
                             require(bundle.manifest.size <= maxFileSize)
                             stage = "commit_root"
@@ -173,13 +183,14 @@ class AndroidSavedGamesGateway(
         }
     }
 
-    private suspend fun confirmUploaded(bundle: CloudSaveBundle): Boolean {
+    private suspend fun confirmUploaded(bundle: CloudSaveBundle, includeRoot: Boolean = true): Boolean {
         checkAccount()
+        val required = bundle.chunks.keys + if (includeRoot) setOf(CloudCodec.ROOT_NAME) else emptySet()
+        if (required.isEmpty()) return true
         val loaded = client.load(true).awaitSnapshotTask()
         val metadata = loaded.get() ?: return false
         try {
             if (loaded.isStale) return false
-            val required = bundle.chunks.keys + CloudCodec.ROOT_NAME
             val entries = (0 until metadata.count).map { metadata.get(it).freeze() }
                 .filter { it.uniqueName in required }.associateBy { it.uniqueName }
             if (entries.keys != required || entries.values.any { it.hasChangePending() }) return false
