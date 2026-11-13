@@ -1,0 +1,23 @@
+<resources>
+    <string name="play_games_title">Google Play Games</string>
+    <string name="play_games_checking">Checking connection…</string>
+    <string name="play_games_connected_as">Connected as %1$s</string>
+    <string name="play_games_connected">Play Games connected</string>
+    <string name="play_games_not_connected">Not connected. You can keep playing.</string>
+    <string name="play_games_unavailable">Play Games is unavailable on this device. You can keep playing.</string>
+    <string name="play_games_cancelled">Connection cancelled. You can keep playing.</string>
+    <string name="play_games_failed">Could not connect. You can keep playing and try again.</string>
+    <string name="play_games_device_only">Progress is saved on this device. Connecting does not turn on cloud backup.</string>
+    <string name="play_games_using_guest">Showing device-only player progress</string>
+    <string name="play_games_using_account">Showing this player’s saved progress</string>
+    <string name="play_games_local_error">Could not update saved player information. Your previous progress is kept. Please try again.</string>
+    <string name="play_games_connect">Connect Play Games</string>
+    <string name="play_games_import_guest">Import device-only progress</string>
+    <string name="play_games_view_account">View connected player progress</string>
+    <string name="play_games_view_guest">View device-only progress</string>
+    <string name="play_games_manage_account">To change your Google Play Games account, use Play Games settings on your device, then return here.</string>
+    <string name="play_games_refresh">Check connection</string>
+    <string name="play_games_import_explanation">Add this device’s unclaimed rounds and statistics to %1$s? They can only be claimed by one Play Games profile. Saved rounds will be kept so you can choose which to resume. This does not enable cloud backup.</string>
+    <string name="play_games_import_confirm">Import progress</string>
+    <string name="play_games_not_now">Not now</string>
+</resources>

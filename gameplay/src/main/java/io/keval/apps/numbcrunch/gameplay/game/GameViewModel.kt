@@ -11,6 +11,7 @@ import io.keval.apps.numbcrunch.domain.game.GuessRules
 import io.keval.apps.numbcrunch.domain.game.isCodeDigit
 import io.keval.apps.numbcrunch.domain.progress.*
 import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
+import io.keval.apps.numbcrunch.gameplay.progress.NewRoundRequest
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,8 @@ class GameViewModel(
     private val requestedDifficulty: Difficulty,
     private val repository: ProgressRepository,
     private val now: () -> Long = System::currentTimeMillis,
+    private val initialOwnerId: String? = null,
+    private val initialRoundId: String? = null,
     private val generateSecret: () -> String = { GuessRules.generateSecret() },
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(GameUiState(difficulty = requestedDifficulty, isLoading = true))
@@ -38,40 +41,56 @@ class GameViewModel(
     init { launchWrite { loadRound() } }
 
     private suspend fun loadRound() {
-        val owner = repository.guestProfile()
-        val restored = savedStateHandle.get<String>(KEY_ROUND_ID)?.let { repository.findRound(owner.id, it) }
-        val existing = restored ?: repository.unfinishedRound(owner.id)
-        val loaded = existing ?: legacyRound(owner.id)?.let { legacy ->
+        val requestedId = initialRoundId ?: savedStateHandle.get<String>(KEY_ROUND_ID)
+        val explicitOwner = initialOwnerId ?: savedStateHandle.get<String>(KEY_OWNER_ID)
+        val hasLegacyFacts = savedStateHandle.get<String>(KEY_SECRET)?.let(GuessRules::isValidCode) == true
+        // Before owner IDs were saved, every real round belonged to the guest namespace.
+        val ownerId = explicitOwner ?: if (requestedId != null || hasLegacyFacts) repository.guestProfile().id
+            else repository.selectedProfile().id
+        val restored = requestedId?.let { id ->
+            val direct = repository.findRound(ownerId, id)
+            val claimedGuest = if (direct == null && explicitOwner == null) {
+                val selected = repository.selectedProfile()
+                val snapshot = repository.exportProgress(selected.id)
+                snapshot.rounds.firstOrNull { record ->
+                    record.id == id && snapshot.guestClaims.any { it.guestProfileId == record.ownerId }
+                }
+            } else null
+            requireNotNull(direct ?: claimedGuest) { "Round unavailable" }
+        }
+        val existing = restored ?: repository.unfinishedRound(ownerId)
+        val loaded = existing ?: legacyRound(ownerId)?.let { legacy ->
             repository.importLegacyRound(legacy)?.also {
                 if (it.status == RoundStatus.WON && savedStateHandle.get<Boolean>("game_win_dialog") != true) {
                     savedStateHandle[KEY_DISMISSED_WIN] = it.id
                 }
             }
         } ?: run {
-            val candidate = initialRound ?: newRound(owner.id, requestedDifficulty).also { initialRound = it }
+            val candidate = initialRound ?: newRound(ownerId, requestedDifficulty).also { initialRound = it }
             repository.createRound(candidate)
         }
-        showCommitted(loaded)
+        val active = if (loaded.status == RoundStatus.PAUSED) repository.updateRound(loaded.resume(now()), loaded.revision) else loaded
+        showCommitted(active)
         // A durable round ID is the only game fact Android's saved-state bundle keeps after migration.
         LEGACY_KEYS.forEach { savedStateHandle.remove<Any>(it) }
     }
 
     fun onDigit(digit: Char) = mutate { current ->
-        current.takeIf { isCodeDigit(digit) && !it.status.isTerminal && it.currentInput.length < 3 && digit !in it.currentInput }
+        current.takeIf { isCodeDigit(digit) && it.status == RoundStatus.ACTIVE && it.currentInput.length < 3 && digit !in it.currentInput }
             ?.editInput(current.currentInput + digit, now())
     }
 
     fun onDelete() = mutate { current ->
-        current.takeIf { !it.status.isTerminal && it.currentInput.isNotEmpty() }
+        current.takeIf { it.status == RoundStatus.ACTIVE && it.currentInput.isNotEmpty() }
             ?.editInput(current.currentInput.dropLast(1), now())
     }
 
     fun onEnter() = mutate { current ->
-        current.takeIf { !it.status.isTerminal && GuessRules.isValidCode(it.currentInput) }?.submitGuess(now())
+        current.takeIf { it.status == RoundStatus.ACTIVE && GuessRules.isValidCode(it.currentInput) }?.submitGuess(now())
     }
 
     fun onHint(guessIndex: Int) = mutate { current ->
-        current.takeIf { !it.status.isTerminal && it.difficulty == Difficulty.MEDIUM &&
+        current.takeIf { it.status == RoundStatus.ACTIVE && it.difficulty == Difficulty.MEDIUM &&
             it.hintedGuessIndex == null && guessIndex in it.guesses.indices }?.useHint(guessIndex, now())
     }
 
@@ -105,29 +124,30 @@ class GameViewModel(
         current.takeUnless { it.status.isTerminal }?.finish(RoundStatus.ABANDONED, now())
     }
 
+    fun onSaveAndPause(onSaved: () -> Unit) = mutate(onSaved) { current ->
+        current.takeIf { it.status == RoundStatus.ACTIVE }?.pause(now())
+    }
+
     fun onDismissWinDialog() {
         savedStateHandle[KEY_DISMISSED_WIN] = round?.id
         _uiState.value = _uiState.value.copy(showWinDialog = false)
     }
 
-    fun onPlayAgain() = launchWrite {
-        val previous = round ?: return@launchWrite
-        if (previous.mode != RoundMode.SINGLE || !previous.status.isTerminal) return@launchWrite
-        val candidate = newRound(previous.ownerId, previous.difficulty, friend = null)
-        commitOperation { showCommitted(repository.createRound(candidate)) }
-    }
+    fun replayRequest(): NewRoundRequest? = round?.takeIf {
+        it.mode == RoundMode.SINGLE && it.status.isTerminal && !_uiState.value.isSaving
+    }?.let { NewRoundRequest(RoundMode.SINGLE, it.difficulty) }
 
     fun onRetryPersistence() {
         val operation = retry ?: return
         retry = null
-        _uiState.value = _uiState.value.copy(hasPersistenceError = false)
+        _uiState.value = _uiState.value.copy(hasPersistenceError = false, showExitConfirmation = false)
         launchWrite(operation)
     }
 
     fun onDismissPersistenceError() {
         if (round == null) return
         retry = null
-        _uiState.value = _uiState.value.copy(hasPersistenceError = false)
+        _uiState.value = _uiState.value.copy(hasPersistenceError = false, showExitConfirmation = false)
     }
 
     private fun mutate(onSaved: (() -> Unit)? = null, action: (RoundRecord) -> RoundRecord?) = launchWrite {
@@ -163,10 +183,13 @@ class GameViewModel(
     private fun showCommitted(record: RoundRecord, revealLastGuess: Boolean = false) {
         round = record
         savedStateHandle[KEY_ROUND_ID] = record.id
+        savedStateHandle[KEY_OWNER_ID] = record.ownerId
         val won = record.status == RoundStatus.WON
         val givenUp = record.status == RoundStatus.GIVEN_UP
         _uiState.value = GameUiState(
             roundId = record.id,
+            ownerId = record.ownerId,
+            isPaused = record.status == RoundStatus.PAUSED,
             playerMode = PlayerMode.valueOf(record.mode.name),
             difficulty = record.difficulty,
             guesses = record.guesses.map { GuessRules.evaluate(record.secret, it) },
@@ -223,6 +246,7 @@ class GameViewModel(
 
     companion object {
         private const val KEY_ROUND_ID = "progress_round_id"
+        private const val KEY_OWNER_ID = "progress_owner_id"
         private const val KEY_DISMISSED_WIN = "progress_dismissed_win"
         private const val KEY_SECRET = "game_secret"
         private const val KEY_MODE = "game_mode"
@@ -234,12 +258,14 @@ class GameViewModel(
         private val LEGACY_KEYS = listOf(KEY_SECRET, KEY_MODE, KEY_DIFFICULTY, KEY_GUESSES, KEY_INPUT,
             KEY_GIVEN_UP, KEY_HINTED_GUESS_INDEX, "game_win_dialog")
 
-        fun factory(friendSecret: String?, difficulty: Difficulty, repository: ProgressRepository): ViewModelProvider.Factory =
+        fun factory(friendSecret: String?, difficulty: Difficulty, repository: ProgressRepository,
+            ownerId: String? = null, roundId: String? = null): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                     require(modelClass.isAssignableFrom(GameViewModel::class.java)) { "Unknown ViewModel class" }
-                    return GameViewModel(extras.createSavedStateHandle(), friendSecret, difficulty, repository) as T
+                    return GameViewModel(extras.createSavedStateHandle(), friendSecret, difficulty, repository,
+                        initialOwnerId = ownerId, initialRoundId = roundId) as T
                 }
             }
     }

@@ -94,6 +94,10 @@ import io.keval.apps.numbcrunch.gameplay.audio.rememberTapFeedback
 import io.keval.apps.numbcrunch.gameplay.common.labelRes
 import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
 import io.keval.apps.numbcrunch.gameplay.navigation.GAMEPLAY_GUIDE_ENABLED
+import io.keval.apps.numbcrunch.gameplay.progress.NewRoundRequest
+import io.keval.apps.numbcrunch.gameplay.progress.ProgressDialog
+import io.keval.apps.numbcrunch.gameplay.common.GuideAction
+import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -130,9 +134,12 @@ fun GameRoute(
     onExitToHome: () -> Unit,
     onHelp: () -> Unit,
     onSettings: () -> Unit,
+    ownerId: String? = null,
+    roundId: String? = null,
+    onRequestNewRound: (NewRoundRequest) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(friendSecretNumber, difficulty, progressRepository))
+    val viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(friendSecretNumber, difficulty, progressRepository, ownerId, roundId))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val requestExit = {
@@ -157,7 +164,8 @@ fun GameRoute(
         onHint = viewModel::onHint,
         onConfirmExit = { viewModel.onConfirmExit(onExitToHome) },
         onDismissExit = viewModel::onDismissExitConfirmation,
-        onPlayAgain = viewModel::onPlayAgain,
+        onPlayAgain = { viewModel.replayRequest()?.let(onRequestNewRound) },
+        onSaveAndPause = { viewModel.onSaveAndPause(onExitToHome) },
         onWinHome = onExitToHome,
         onDismissWinDialog = viewModel::onDismissWinDialog,
         modifier = modifier,
@@ -202,6 +210,7 @@ fun GameScreen(
     onPlayAgain: () -> Unit,
     onWinHome: () -> Unit,
     onDismissWinDialog: () -> Unit,
+    onSaveAndPause: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var remarkInfo by remember { mutableStateOf<GuessEvaluation?>(null) }
@@ -321,9 +330,10 @@ fun GameScreen(
 
         if (uiState.showExitConfirmation) {
             ExitConfirmationDialog(
-                playerMode = uiState.playerMode,
                 onConfirm = onConfirmExit,
                 onDismiss = onDismissExit,
+                onPause = onSaveAndPause,
+                isSaving = uiState.isSaving,
             )
         }
 
@@ -773,25 +783,22 @@ private fun DigitKey(
 
 @Composable
 private fun ExitConfirmationDialog(
-    playerMode: PlayerMode,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    onPause: () -> Unit,
+    isSaving: Boolean,
 ) {
-    val modeName = stringResource(
-        if (playerMode == PlayerMode.DOUBLE) R.string.game_mode_double else R.string.game_mode_single,
-    )
-    Dialog(onDismissRequest = onDismiss) {
-        NumbCrunchDialogFrame(
-            textureRes = R.drawable.game_keypad_wood,
-            title = stringResource(R.string.exit_title),
-            message = stringResource(R.string.exit_message, modeName),
-        ) {
-            DialogButtons(
-                secondaryText = stringResource(R.string.exit_cancel),
-                onSecondary = onDismiss,
-                primaryText = stringResource(R.string.exit_confirm),
-                onPrimary = onConfirm,
-            )
+    ProgressDialog(
+        title = stringResource(R.string.progress_pause_title),
+        message = stringResource(R.string.progress_pause_message),
+        onDismiss = { if (!isSaving) onDismiss() },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            GuideAction(stringResource(R.string.progress_save_pause), onPause, Modifier.fillMaxWidth(), enabled = !isSaving)
+            GuideAction(stringResource(R.string.progress_continue), onDismiss, Modifier.fillMaxWidth(), enabled = !isSaving)
+            TextButton(onClick = onConfirm, enabled = !isSaving, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.progress_abandon_confirm), color = NumbCrunchGoldCream)
+            }
         }
     }
 }

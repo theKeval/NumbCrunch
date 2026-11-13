@@ -16,8 +16,11 @@ advertising, chat, or in-app purchases.
 ## Information the App Collects
 
 NumbCrunch does not ask for your name, age, email address, or other personal
-details. We do not operate a server for the game or receive your Play Games
-profile details. Google handles Play Games sign-in and related data as
+details. We do not operate a server for the game. The app reads your Play Games
+gamer name and game-scoped player identifier to show your connection and keep
+each player's local progress separate. Your gamer name is held in memory;
+the identifier and selected local player are stored on your device. We do not
+request your email. Google handles Play Games sign-in and related data as
 described below.
 
 ## Third-Party Services
@@ -28,6 +31,7 @@ as your gamer tag and avatar. Google's SDK also collects analytics and
 diagnostics to improve its services. Google encrypts this data in transit and
 handles it under [Google's Privacy Policy](https://policies.google.com/privacy).
 You can manage your sign-in and profile in your device's Play Games settings.
+Choosing Connect in the app can also open Google's profile-creation flow.
 NumbCrunch keeps your rounds and game progress on your device.
 Play Games sign-in needs an internet connection; playing rounds does not.
 
@@ -47,6 +51,15 @@ device. We cannot see or access any of it.
   includes Double Player hidden numbers. Tracking starts with this update;
   totals from earlier games are not reconstructed. A round already available
   in Android's saved state can be restored once into the new history.
+- **Player selection and guest import:** the selected local player, associated
+  Play Games identifier, and any guest-history ownership claim are kept on
+  this device. Importing guest progress requires your confirmation and links
+  that guest history to one Play Games player; it cannot be imported into a
+  different player's history.
+
+Save and pause keeps the same round, including a Double Player hidden number
+and pending input, until it is resumed, finished, or explicitly abandoned.
+Pausing does not count as a loss or a leave.
 
 You can delete all of this at any time by clearing the app's storage in your
 device's settings or by uninstalling the app.
@@ -58,8 +71,9 @@ app's settings and tutorial progress in your device backup, which Google stores
 in your Google account. This backup is managed by Android and Google under
 [Google's Privacy Policy](https://policies.google.com/privacy); we cannot
 access it. You can control backups in your device's settings.
-The round-history database is excluded from Android's automatic cloud backup
-and device-transfer rules. Its contents stay on this installation; this version
+The round-history database, including player selection and ownership claims,
+is excluded from Android's automatic cloud backup and device-transfer rules.
+Its contents stay on this installation; this version
 does not yet back up game history through Play Games Saved Games.
 
 ## Google Play

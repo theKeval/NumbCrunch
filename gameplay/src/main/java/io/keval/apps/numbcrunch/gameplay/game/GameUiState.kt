@@ -7,6 +7,8 @@ import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
 
 data class GameUiState(
     val roundId: String? = null,
+    val ownerId: String? = null,
+    val isPaused: Boolean = false,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val hasPersistenceError: Boolean = false,
@@ -29,7 +31,7 @@ data class GameUiState(
     val hintedGuessIndex: Int? = null,
 ) {
     val isRoundOver: Boolean get() = isWon || isGivenUp || isAbandoned
-    private val canInteract: Boolean get() = !isLoading && !hasPersistenceError && !isRoundOver
+    private val canInteract: Boolean get() = !isLoading && !hasPersistenceError && !isRoundOver && !isPaused
     val canEnter: Boolean get() = canInteract && currentInput.length == CODE_LENGTH
     val canDelete: Boolean get() = canInteract && currentInput.isNotEmpty()
 

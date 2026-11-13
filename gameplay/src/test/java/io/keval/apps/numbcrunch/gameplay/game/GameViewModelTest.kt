@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.game.DigitFeedback
 import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
+import io.keval.apps.numbcrunch.gameplay.progress.RoundEntryViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -32,6 +33,16 @@ class GameViewModelTest {
     ) = GameViewModel(handle, friendSecret, difficulty, repositories.getOrPut(handle) { TestProgressRepository() }) { secrets.removeAt(0) }
 
     private fun GameViewModel.type(code: String) = code.forEach(::onDigit)
+
+    private fun GameViewModel.replay(): GameViewModel {
+        val repository = repositories.values.first { it.records.value.any { record -> record.id == uiState.value.roundId } }
+        val request = requireNotNull(replayRequest())
+        val entry = RoundEntryViewModel(repository, generateSecret = { "012" })
+        entry.requestStart(request)
+        val destination = requireNotNull(entry.uiState.value.destination)
+        return GameViewModel(SavedStateHandle(), null, request.difficulty, repository,
+            initialOwnerId = destination.ownerId, initialRoundId = destination.roundId)
+    }
 
     @Test
     fun `Easy reveals submitted digit feedback and keeps the V1 remark`() {
@@ -150,9 +161,7 @@ class GameViewModelTest {
         assertFalse(restored.uiState.value.showsDigitFeedback(1))
         assertEquals(0, restored.uiState.value.hintsRemaining)
 
-        restored.onPlayAgain()
-
-        val replay = viewModel(handle).uiState.value
+        val replay = restored.replay().uiState.value
         assertEquals(Difficulty.MEDIUM, replay.difficulty)
         assertEquals(1, replay.hintsRemaining)
         assertNull(replay.hintedGuessIndex)
@@ -303,19 +312,19 @@ class GameViewModelTest {
         assertEquals(PlayerMode.DOUBLE, vm.uiState.value.playerMode)
         vm.type("908")
         vm.onEnter()
-        vm.onPlayAgain()
+        assertNull(vm.replayRequest())
         assertTrue(vm.uiState.value.isWon)
 
         val single = viewModel(difficulty = Difficulty.EASY)
         single.type("573")
         single.onEnter()
-        single.onPlayAgain()
-        assertEquals(Difficulty.EASY, single.uiState.value.difficulty)
-        assertFalse(single.uiState.value.isWon)
-        assertTrue(single.uiState.value.guesses.isEmpty())
-        single.type("012")
-        single.onEnter()
-        assertTrue(single.uiState.value.isWon)
+        val replay = single.replay()
+        assertEquals(Difficulty.EASY, replay.uiState.value.difficulty)
+        assertFalse(replay.uiState.value.isWon)
+        assertTrue(replay.uiState.value.guesses.isEmpty())
+        replay.type("012")
+        replay.onEnter()
+        assertTrue(replay.uiState.value.isWon)
     }
 
     @Test
@@ -365,9 +374,9 @@ class GameViewModelTest {
     fun `play again clears a given up round`() {
         val vm = viewModel()
         vm.onConfirmQuit()
-        vm.onPlayAgain()
+        val replay = vm.replay()
 
-        assertFalse(vm.uiState.value.isGivenUp)
-        assertNull(vm.uiState.value.revealedSecret)
+        assertFalse(replay.uiState.value.isGivenUp)
+        assertNull(replay.uiState.value.revealedSecret)
     }
 }

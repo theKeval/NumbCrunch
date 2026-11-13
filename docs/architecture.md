@@ -114,11 +114,14 @@ Welcome is removed when opening Tutorial or Home, so Back cannot reopen it.
 
 `HomeUiState` and `GameUiState` are exposed as read-only `StateFlow`s and
 collected with lifecycle awareness. Home difficulty uses `SavedStateHandle`;
-Game projects only committed SQLite state. New Home selections default to Easy;
+Game projects only committed SQLite state. `RoundEntryViewModel` coordinates
+Home/Tutorial/replay starts and resumes, and navigates only after durable success.
+Home displays safe unfinished-round summaries from this same repository flow.
+New Home selections default to Easy;
 imported legacy rounds without a saved difficulty use Hard. Difficulty cannot
 change within a round, and Single Player replay retains it. Profiles use local
-opaque IDs; the current Game flow uses the guest profile even when PGS signs in.
-Connection/profile switching and cloud sync are subsequent work. See
+opaque IDs. New rounds pin the selected profile; existing rounds retain their
+original owner even after a profile switch. Cloud sync is subsequent work. See
 [Durable player progress](player-progress.md).
 Tutorial completion and audio settings share one Preferences DataStore file
 (`numbcrunch_preferences`) through a single delegate in `NumbCrunchPreferences.kt`.

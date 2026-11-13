@@ -22,8 +22,13 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
   for Game Stats support. Older Android devices cannot receive this update;
   Guesser V1's Android 5.0 minimum is unchanged.
 - Persist round state and outcomes locally, with duplicate-safe statistics and
-  retryable save errors. Keep unfinished rounds recoverable after app closure;
-  explicit pause/resume controls and the Statistics screen follow separately.
+  retryable save errors. Save and pause ongoing rounds, resume them from Home,
+  and require an explicit choice before replacing an unfinished game.
+- Show Play Games connection and player selection on Home, with an optional
+  Connect action and confirmed one-time guest-history import. Keep offline
+  play and each player's local progress separate.
+- Add offline Statistics with combined mode/difficulty filters, win and leave
+  totals, weighted guess averages, hint use, streaks, and clear empty states.
 - Define ten achievements and all-time Single Player Hard win scoring, with
   original Play Games artwork and validated progress projections for integration.
 

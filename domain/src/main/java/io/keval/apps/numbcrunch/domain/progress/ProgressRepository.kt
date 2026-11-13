@@ -6,9 +6,16 @@ import kotlinx.coroutines.flow.Flow
 interface ProgressRepository {
     suspend fun guestProfile(): PlayerProfile
     suspend fun profileForPlayer(pgsPlayerId: String): PlayerProfile
+    /** Switch only when the authenticated account changes; preserve deliberate local selection on reconnect. */
+    suspend fun activatePlayerProfile(pgsPlayerId: String): PlayerProfile
+    suspend fun selectedProfile(): PlayerProfile
+    suspend fun selectProfile(profileId: String): PlayerProfile
+    fun observeSelectedProfile(): Flow<PlayerProfile>
+    suspend fun claimGuestProgress(guestProfileId: String, accountProfileId: String): GuestProgressClaim
     fun observeRounds(ownerId: String): Flow<List<RoundRecord>>
     suspend fun findRound(ownerId: String, roundId: String): RoundRecord?
     suspend fun unfinishedRound(ownerId: String): RoundRecord?
+    suspend fun unfinishedRounds(ownerId: String): List<RoundRecord>
     suspend fun createRound(round: RoundRecord): RoundRecord
     suspend fun updateRound(round: RoundRecord, expectedRevision: Long): RoundRecord
 
@@ -26,9 +33,21 @@ data class ProgressSnapshot(
     val schemaVersion: Int = 1,
     val profile: PlayerProfile,
     val rounds: List<RoundRecord>,
+    val guestClaims: List<GuestProgressClaim> = emptyList(),
 ) {
-    val statistics: PlayerStatistics get() = PlayerStatistics.fromRounds(rounds)
+    val ownerIds: Set<String> get() = setOf(profile.id) + guestClaims.map {
+        require(it.accountProfileId == profile.id) { "Wrong claim account" }
+        it.guestProfileId
+    }
+    val statistics: PlayerStatistics get() {
+        val owners = ownerIds
+        require(rounds.all { it.ownerId in owners }) { "Wrong progress owner" }
+        return PlayerStatistics.fromRounds(rounds)
+    }
 }
+
+/** Consent links an immutable guest namespace to exactly one account; it never authorizes event replay. */
+data class GuestProgressClaim(val guestProfileId: String, val accountProfileId: String, val claimedAt: Long)
 
 class RoundConflictException : IllegalStateException("Round changed; reload before retrying")
 class UnfinishedRoundException : IllegalStateException("Resume or finish the existing round first")
