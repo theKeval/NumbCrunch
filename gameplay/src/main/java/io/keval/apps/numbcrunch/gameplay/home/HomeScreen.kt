@@ -67,6 +67,7 @@ import io.keval.apps.numbcrunch.gameplay.navigation.GAMEPLAY_GUIDE_ENABLED
 import io.keval.apps.numbcrunch.gameplay.progress.OngoingRound
 import io.keval.apps.numbcrunch.gameplay.progress.OngoingRoundCard
 import io.keval.apps.numbcrunch.gameplay.common.GuideAction
+import io.keval.apps.numbcrunch.gameplay.connection.PlayGamesConnectionRoute
 
 @Composable
 fun HomeRoute(
@@ -274,6 +275,8 @@ fun HomeScreen(
                         onGameplayClick = onGameplayClick,
                         onAboutClick = onAboutClick,
                     )
+
+                    PlayGamesConnectionRoute(Modifier.widthIn(max = 420.dp).padding(top = 16.dp))
 
                     Spacer(modifier = Modifier.height(gapAfterControls))
                 }
