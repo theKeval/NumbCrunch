@@ -6,6 +6,10 @@ import io.keval.apps.numbcrunch.domain.game.GuessEvaluation
 import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
 
 data class GameUiState(
+    val roundId: String? = null,
+    val isLoading: Boolean = false,
+    val isSaving: Boolean = false,
+    val hasPersistenceError: Boolean = false,
     val playerMode: PlayerMode = PlayerMode.SINGLE,
     val difficulty: Difficulty = Difficulty.HARD,
     val guesses: List<GuessEvaluation> = emptyList(),
@@ -13,6 +17,7 @@ data class GameUiState(
     val isWon: Boolean = false,
     /** The player quit the round and the secret was revealed to them. */
     val isGivenUp: Boolean = false,
+    val isAbandoned: Boolean = false,
     /** Revealed only once the round is won or given up. */
     val revealedSecret: String? = null,
     val showExitConfirmation: Boolean = false,
@@ -23,12 +28,13 @@ data class GameUiState(
     /** A nonnull index records a spent hint, even if its restored row is unavailable. */
     val hintedGuessIndex: Int? = null,
 ) {
-    val isRoundOver: Boolean get() = isWon || isGivenUp
-    val canEnter: Boolean get() = !isRoundOver && currentInput.length == CODE_LENGTH
-    val canDelete: Boolean get() = !isRoundOver && currentInput.isNotEmpty()
+    val isRoundOver: Boolean get() = isWon || isGivenUp || isAbandoned
+    private val canInteract: Boolean get() = !isLoading && !hasPersistenceError && !isRoundOver
+    val canEnter: Boolean get() = canInteract && currentInput.length == CODE_LENGTH
+    val canDelete: Boolean get() = canInteract && currentInput.isNotEmpty()
 
     val hintsRemaining: Int
-        get() = if (difficulty == Difficulty.MEDIUM && !isRoundOver && hintedGuessIndex == null) 1 else 0
+        get() = if (difficulty == Difficulty.MEDIUM && canInteract && hintedGuessIndex == null) 1 else 0
 
     internal fun canUseHint(guessIndex: Int): Boolean = hintsRemaining > 0 && guessIndex in guesses.indices
 
@@ -40,6 +46,6 @@ data class GameUiState(
         }
 
     fun isDigitEnabled(digit: Char): Boolean {
-        return !isRoundOver && currentInput.length < CODE_LENGTH && digit !in currentInput
+        return canInteract && currentInput.length < CODE_LENGTH && digit !in currentInput
     }
 }

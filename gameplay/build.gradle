@@ -44,6 +44,7 @@ dependencies {
     implementation "androidx.compose.material:material-icons-extended:$version_compose_ui"
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version_coroutine"
 
     debugImplementation "androidx.compose.ui:ui-tooling:$version_compose_ui"
 }

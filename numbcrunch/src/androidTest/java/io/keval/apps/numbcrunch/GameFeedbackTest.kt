@@ -12,6 +12,7 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -29,12 +30,19 @@ import io.keval.apps.numbcrunch.gameplay.game.GameScreen
 import io.keval.apps.numbcrunch.gameplay.game.GameUiState
 import org.junit.Assert.assertEquals
 import org.junit.Rule
+import org.junit.After
+import java.util.UUID
+import io.keval.apps.numbcrunch.data.progress.SqliteProgressRepository
 import org.junit.Test
 
 class GameFeedbackTest {
     @get:Rule val compose = createComposeRule()
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val databaseName = "feedback-${UUID.randomUUID()}.db"
+    private val progressRepository = SqliteProgressRepository(context, databaseName)
+    private var submittedRows = 0
+    @After fun closeProgress() { progressRepository.close(); context.deleteDatabase(databaseName) }
     private val clues: List<String> get() = listOf(
         clue("5", R.string.clue_exact),
         clue("2", R.string.clue_absent),
@@ -146,6 +154,7 @@ class GameFeedbackTest {
             restoration.setContent {
                 NumbCrunchTheme {
                     GameRoute(
+                        progressRepository = progressRepository,
                         friendSecretNumber = "573",
                         difficulty = difficulty,
                         onExitToHome = {},
@@ -154,6 +163,10 @@ class GameFeedbackTest {
                     )
                 }
             }
+            compose.waitUntil(timeoutMillis = 5_000) {
+                compose.onAllNodes(hasContentDescription(context.getString(R.string.cd_key_digit, "5")) and isEnabled())
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
         }
 
     private fun typeGuess() {
@@ -161,11 +174,19 @@ class GameFeedbackTest {
             compose.onNodeWithContentDescription(context.getString(R.string.cd_key_digit, digit.toString()))
                 .performClick()
         }
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodesWithContentDescription(context.getString(R.string.cd_active_row, submittedRows + 1, "5 2 7"))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     private fun submitGuess() {
         typeGuess()
         compose.onNodeWithContentDescription(context.getString(R.string.cd_key_enter)).performClick()
+        submittedRows += 1
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodesWithContentDescription(rowDescription(submittedRows)).fetchSemanticsNodes().isNotEmpty()
+        }
         compose.mainClock.advanceTimeBy(1_000)
         compose.waitForIdle()
     }

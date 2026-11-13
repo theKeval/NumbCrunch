@@ -141,21 +141,20 @@ progress survive. Devices below API 24 cannot install this update.
 
 ### State and Persistence
 
-The friend-secret setup handoff is process-memory only. Once Game starts, its
-secret and round state use `SavedStateHandle`, including difficulty and Medium
-hint use. This supports Android background recreation, not a persistent saved-game
-database. Before adding further persistence, define:
-
-- whether a secret survives process death;
-- when it is consumed or cleared;
-- whether it may be backed up;
-- how sensitive values are excluded from logs and navigation arguments.
+The friend-secret setup handoff is process-memory only. Once Game starts,
+`ProgressRepository` stores the round in SQLite, including input, guesses,
+difficulty, Medium hint use and outcome. `SavedStateHandle` retains only the
+round ID and win-dialog presentation state after one-time legacy import.
+Commit candidates before updating the UI; errors must preserve the last saved
+state and offer retry. Never log secrets/guesses or use them in navigation
+arguments. Progress databases are excluded from Android backup/device transfer.
+See [Durable player progress](player-progress.md) for identity, revision,
+statistics and retention contracts.
 
 Preferences DataStore holds tutorial completion and audio settings in one
 `numbcrunch_preferences` file. New preference repositories must reuse the
 `numbCrunchPreferences` delegate in `:data`; a second delegate for the same file
-crashes at runtime. Do not store the friend secret there without first
-answering the questions above.
+crashes at runtime. Keep round facts in the transactional progress database.
 
 ### Audio
 

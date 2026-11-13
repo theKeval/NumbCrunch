@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="progress_save_failed_title">Couldn’t save your game</string>
+    <string name="progress_save_failed_message">Your last saved progress is safe. Free some device storage if needed, then try again.</string>
+    <string name="progress_retry">Try again</string>
+    <string name="progress_keep_playing">Keep playing</string>
+    <string name="progress_back_home">Back to Home</string>
+</resources>

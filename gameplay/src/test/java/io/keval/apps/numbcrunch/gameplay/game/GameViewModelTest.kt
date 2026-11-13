@@ -9,15 +9,27 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.Before
+import org.junit.After
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.resetMain
+import java.util.IdentityHashMap
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GameViewModelTest {
+    private val repositories = IdentityHashMap<SavedStateHandle, TestProgressRepository>()
+    @Before fun setUpDispatcher() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
+    @After fun resetDispatcher() { Dispatchers.resetMain() }
 
     private fun viewModel(
         handle: SavedStateHandle = SavedStateHandle(),
         friendSecret: String? = null,
         difficulty: Difficulty = Difficulty.HARD,
         secrets: MutableList<String> = mutableListOf("573", "012"),
-    ) = GameViewModel(handle, friendSecret, difficulty) { secrets.removeAt(0) }
+    ) = GameViewModel(handle, friendSecret, difficulty, repositories.getOrPut(handle) { TestProgressRepository() }) { secrets.removeAt(0) }
 
     private fun GameViewModel.type(code: String) = code.forEach(::onDigit)
 

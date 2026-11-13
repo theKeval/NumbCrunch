@@ -36,6 +36,8 @@ import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -83,6 +85,7 @@ import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.game.DigitFeedback
 import io.keval.apps.numbcrunch.domain.game.GuessEvaluation
 import io.keval.apps.numbcrunch.domain.game.GuessRules
+import io.keval.apps.numbcrunch.domain.progress.ProgressRepository
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.audio.GameSound
 import io.keval.apps.numbcrunch.gameplay.audio.LocalGameSoundPlayer
@@ -123,12 +126,13 @@ private val KeypadOverlay = Color(0x66140802)
 fun GameRoute(
     friendSecretNumber: String?,
     difficulty: Difficulty,
+    progressRepository: ProgressRepository,
     onExitToHome: () -> Unit,
     onHelp: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(friendSecretNumber, difficulty))
+    val viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(friendSecretNumber, difficulty, progressRepository))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val requestExit = {
@@ -151,16 +155,32 @@ fun GameRoute(
         onDelete = viewModel::onDelete,
         onEnter = viewModel::onEnter,
         onHint = viewModel::onHint,
-        onConfirmExit = {
-            viewModel.onDismissExitConfirmation()
-            onExitToHome()
-        },
+        onConfirmExit = { viewModel.onConfirmExit(onExitToHome) },
         onDismissExit = viewModel::onDismissExitConfirmation,
         onPlayAgain = viewModel::onPlayAgain,
         onWinHome = onExitToHome,
         onDismissWinDialog = viewModel::onDismissWinDialog,
         modifier = modifier,
     )
+    if (uiState.hasPersistenceError) {
+        AlertDialog(
+            onDismissRequest = viewModel::onDismissPersistenceError,
+            title = { Text(stringResource(R.string.progress_save_failed_title)) },
+            text = { Text(stringResource(R.string.progress_save_failed_message)) },
+            confirmButton = {
+                TextButton(onClick = viewModel::onRetryPersistence) { Text(stringResource(R.string.progress_retry)) }
+            },
+            dismissButton = {
+                if (uiState.isLoading) {
+                    TextButton(onClick = onExitToHome) { Text(stringResource(R.string.progress_back_home)) }
+                } else {
+                    TextButton(onClick = viewModel::onDismissPersistenceError) {
+                        Text(stringResource(R.string.progress_keep_playing))
+                    }
+                }
+            },
+        )
+    }
 }
 
 @Composable

@@ -123,12 +123,14 @@ process and `AppContainer` live.
   confetti. Single Player offers **PLAY AGAIN** and **HOME**; Double Player
   offers **HOME**.
 - Back (header or system) or a horizontal swipe in either direction during an
-  unfinished round asks for confirmation before returning Home and discarding
-  the round.
+  unfinished round asks for confirmation before recording abandonment and
+  returning Home. A failed save keeps the player in the round with retry.
 - **SHOW** asks for confirmation, then ends the round and shows a popup
   revealing the secret number; **HOME**, Back, or tapping outside returns Home.
-- Settings opens Settings. Returning resumes the same round, because the Game
-  back-stack entry and its `SavedStateHandle` state are kept.
+- Settings opens Settings. Returning resumes the same durable round. Help,
+  Settings and backgrounding do not count as losses. Entering Game after a
+  restart restores an unfinished guest round; an explicit Home resume card and
+  pause choice are subsequent work.
 
 ### Other Destinations
 
@@ -220,6 +222,6 @@ synthesized sounds and music/sound-effect settings (no vibration setting).
 
 ## Scope Not Yet Implemented in the Revamp
 
-The Compose app currently has no vibration setting, cross-launch round
-persistence, profiles, scoreboard, Play Games integration, timer,
-or daily puzzle.
+The Compose app currently has no vibration setting, player-facing statistics
+screen, profile switching, cloud backup, achievements, leaderboard, timer or
+daily puzzle. Local round/statistics storage and PGS startup sign-in are present.

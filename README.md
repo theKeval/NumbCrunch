@@ -102,9 +102,11 @@ See the [architecture guide](docs/architecture.md) and
 
 Gameplay works offline and without an account. Google Play Games Services
 can authenticate players with an existing profile at launch. Friend secrets
-are handed to Game in memory. Once a round starts, Android saved state can
-restore its secret, guesses, difficulty and hint use after background process
-recreation.
+are handed to Game in memory. Once a round starts, a local SQLite database
+stores its secret, guesses, difficulty, hint use and outcome across launches.
+Entering Game restores any unfinished guest round. Local statistics begin with
+this update; no historical totals are invented. See
+[Durable player progress](docs/player-progress.md) for storage and backup rules.
 
 NumbCrunch requires Android 7.0 (API 24) or later. Devices on Android 5 or 6
 can keep an installed older version but cannot receive this update. The legacy

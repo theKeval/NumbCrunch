@@ -17,6 +17,7 @@ class AppContainer(
     context: Context,
     tutorialRepository: TutorialRepository = RepositoryModule.createTutorialRepository(context),
 ) {
+    val progressRepository = RepositoryModule.createProgressRepository(context)
     private val appInfoRepository = RepositoryModule.createAppInfoRepository()
     private val gameSessionRepository = RepositoryModule.createGameSessionRepository()
     private val settingsRepository = RepositoryModule.createSettingsRepository(context)
