@@ -46,6 +46,7 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
   and prevent stale branches or interrupted SDK callbacks from overwriting progress.
 - Share decoded artwork across screens to prevent memory crashes on older
   Android devices without increasing the app's heap limit.
+- Keep statistics and leaderboard filters readable in light system themes.
 
 ## 1.1.0 (versionCode 3) — internal and closed testing
 
