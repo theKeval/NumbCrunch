@@ -43,27 +43,97 @@ retained hint/input, and identical scores after a cloud round trip and merge.
 
 | Surface | Purpose | Current evidence |
 | --- | --- | --- |
-| API 24 AOSP ARM64 emulator | New minimum, no Google services, offline startup/play/pause/statistics | SDK image installation in progress; runtime checks not yet performed |
-| API 36 AOSP ATD ARM64 emulator | Current API, no Google services, offline regressions | SDK image installation in progress; runtime checks not yet performed |
-| Connected Play-enabled API 31 phone | Real tester identity, SDK dialogs, Saved Games, achievements, Game Stats, leaderboard | Reserved for coordinator/platform device work; do not infer completed flows from unit tests |
+| API 24 AOSP ARM64 emulator | New minimum, no Google services, offline startup/play/pause/statistics | 37 targeted fixtures and eight ordinary resume cycles passed on 92b97ad at unchanged 48 MB heap; six contrast fixtures and rendered Statistics passed on b4f0736 |
+| API 36 AOSP ATD ARM64 emulator | Current API, no Google services, offline regressions | 28 focused fixtures passed on 9c0a2f7; 18 new/changed fixtures passed on 92b97ad; eight ordinary offline resume cycles passed |
+| Connected Play-enabled API 31 phone | Real tester identity, SDK dialogs, Saved Games, achievements, Game Stats, leaderboard | Coordinator verified Saved Games, exact scratch restore, three native achievements, and a real Single Hard score/rank; Game Stats buffered only |
 | Play-installed production package | App-signing certificate, ordinary non-allowlisted user, new/existing gamer profile | Deferred until a later authorized release and internal testing upload |
 
-At setup inspection the SDK installer was actively downloading, not hung. It
-had not yet installed either system image. The QA agent did not replace or
-stop the coordinator's installer and used no additional large images. AVDs
-are temporary test devices; never change the phone's Google accounts or clear
-its game data to make a test pass.
+Android Emulator 37.2.13 and both requested system images installed. Its
+Hypervisor.Framework check passed. API 24 default ARM64 revision 9 is in a
+separate temporary SDK root; API 36 AOSP ATD ARM64 revision 1 uses the normal
+SDK image directory. Existing accepted license records were reused; no new
+terms were accepted. The coordinator-authorized interruption of the redundant
+API 24 download avoided duplicating the already installed image. Temporary
+AVDs use one-gigabyte data images through the supported `-data` option,
+preventing the emulator's six-gigabyte new-image default from filling the disk.
+No phone account settings or existing phone game data were changed.
 
-Android Emulator 37.2.13 subsequently installed and its Hypervisor.Framework
-check passed. The requested API 24 image is also being staged in a separate
-temporary SDK root to download in parallel safely, reusing existing accepted
-license records; no new terms were accepted. It does not write the main SDK
-installer's package directories. These setup checks are not emulator runtime
-or Google-services coverage.
+The copied coordinator artifacts for compatibility testing represent
+`9c0a2f7`, the memory fix `92b97ad`, and contrast fix `b4f0736` (1.2.0/code 4), retained
+under matching `/private/tmp/numbcrunch-qa-<commit>/` directories. Both emulators have no
+`com.google.android.gms` package. API 24's stock application heap limit is
+48 MB; API 36's is 192 MB. Both reported no active default network during
+checks. These are emulator checks, not Google sign-in or Play-installed
+production coverage. API 36 ATD disables hardware rendering, and its direct
+screen capture was black. Its successful accessibility/instrumentation checks
+do not establish pixel rendering, animation, or screenshot correctness. See
+[Android's ATD limitations](https://developer.android.com/studio/test/managed-devices).
 
-The final combined run must record its commit SHA, actual test counts, device
-API/build, and failures/retests. Check all of the following without marking an
-unavailable scenario passed:
+API 24 failure evidence is preserved: repeated ordinary save/Home/resume
+crashed while decoding the 896 by 1600 background (5,734,412-byte allocation)
+on the third resume; the app heap limit was not enlarged. The pause/restoration
+instrumentation fixture also failed both in the batch and by itself.
+The shared decoded-artwork fix in `92b97ad` closed this defect: all 37 targeted
+fixtures passed in 9.011 seconds at the unchanged 48 MB heap, including the
+previously failing restoration case. Eight ordinary save/Home/resume cycles
+preserved the original guess and partial input. Java heap allocation
+stayed approximately 23.3–24.3 MB. Rendered Statistics retained played 1,
+wins 0, and given up 0; its image was visually inspected. No `largeHeap`
+manifest flag or reduced artwork resolution was used.
+API 36 passed all 28 focused fixtures in 46.108 seconds. Eight ordinary
+save/Home/resume cycles then preserved submitted guess `123` and partial input
+`4`, including force-stop/restart. The Statistics screen reported played 1,
+wins 0, given up 0, left unfinished 0, and ongoing/paused 1. Explicit Connect
+returned the truthful unavailable/device-only state without losing the round.
+Java heap allocation stayed approximately 12.3–13.6 MB during the cycles;
+this ATD observation does not establish rendered bitmap memory behavior.
+After integration of the memory/cloud fixes, all 18 new/changed API 36 fixtures passed in
+4.626 seconds: artwork sharing (3), snapshot task cancellation (4), active-game
+cloud recovery (1), cloud database cases (7), and all-time ranking semantics (3).
+Actual API 24 visual review found low-contrast default FilterChip labels on
+the dark wood panels in light mode. `b4f0736` gives Statistics and the all-time
+ranking filters explicit cream/gold colors and borders. All six affected
+screen fixtures passed in 1.921 seconds, including explicit light-theme
+coverage. The corrected actual Statistics screenshot was visually checked at
+`/private/tmp/numbcrunch-api24-contrast-statistics.png`. Its selected and
+unselected filters are readable. The connected ranking fixture passed; an
+attempted API 24 screen recording failed in the emulator encoder, so it did
+not supply additional visual proof of that connected-only view.
+
+Logs are
+`/private/tmp/numbcrunch-api24-five-fixtures.log`,
+`/private/tmp/numbcrunch-api24-offline-fixtures.log`,
+`/private/tmp/numbcrunch-api24-real-oom.log`,
+`/private/tmp/numbcrunch-api24-fixed-manual-nav.log`,
+`/private/tmp/numbcrunch-api24-final-fixtures.log`,
+`/private/tmp/numbcrunch-api24-contrast-fixtures.log`,
+`/private/tmp/numbcrunch-api36-offline-fixtures.log`,
+`/private/tmp/numbcrunch-api36-manual-nav.log`, and
+`/private/tmp/numbcrunch-api36-final-fixtures.log`.
+
+The coordinator reports actual tester-phone evidence on API 31 after an
+in-place upgrade to `92b97ad`: a six-guess Single Player Hard win produced an
+acknowledged lifetime score of 1, read back as rank 1 in both Top 25 and Near
+me. Native Achievements showed Learning the Ropes, First Solo Solve, and Hard
+Earned earned (3/10), with Hard Regular at 10%. A real paused Medium round,
+including its spent hint and partial input, restored exactly into an isolated
+scratch database twice. Saved Games reached server-confirmed status and
+retained that state after restart. A normal abandonment reached SDK
+`BUFFERED` for Game Stats; Google ingestion/profile display is still unverified.
+Evidence includes `/private/tmp/numbcrunch-guesser16-live-restore.log` and
+`/private/tmp/numbcrunch-sprint-evidence/leaderboard-top25-one-hard-win.png`
+plus `leaderboard-near-me-one-hard-win.png` in the same directory. A later
+unaided Medium win left the Hard leaderboard at 1. The final local phone totals
+were played 3, wins 2, given up 0, left unfinished 1, ongoing 0, win rate 66.7%,
+and winning average 6. This is one
+phone and one tester account, not a two-device or account-switch proof.
+
+The recorded checks above cover the stated configurations only. Account A/B
+switching on real devices, a newly created or supervised gamer profile, true
+two-device offline reconciliation, audible feedback/spoken TalkBack order,
+Google Game Stats ingestion/profile display, and human rate-limit calibration
+remain unverified. Preserve these acceptance/release gates and check the full
+matrix below without marking unavailable scenarios passed:
 
 - Fresh guest and completed introduction; offline/no-services startup;
   Connect, cancellation, no-profile creation, returning profile, and supported
@@ -131,8 +201,8 @@ Time actual experienced-player rounds before publishing this rate limit.
 5. The user uploads the resulting bundle to a Play internal testing track.
    Verify the actual Play-installed production package with a non-PGS-
    allowlisted account and both new/existing gamer profiles. Confirm sign-in,
-   published resources, backup/recovery, and native achievement/leaderboard
-   views. Only then does the user promote that tested artifact to production.
+   published resources, backup/recovery, native Achievements, and the custom
+   all-time rankings view. Only then does the user promote that tested artifact to production.
    Agents do not upload, promote, publish releases, or push release tags.
 
 Keep unperformed production checks as release gates even when sprint testing
