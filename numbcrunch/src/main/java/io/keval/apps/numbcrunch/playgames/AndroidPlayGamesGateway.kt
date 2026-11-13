@@ -12,6 +12,7 @@ import com.google.android.gms.tasks.Task
 import io.keval.apps.numbcrunch.domain.connection.ConnectionResult
 import io.keval.apps.numbcrunch.domain.connection.PlayGamesGateway
 import io.keval.apps.numbcrunch.domain.connection.PlayGamesPlayer
+import io.keval.apps.numbcrunch.domain.connection.readStablePlayGamesPlayer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -35,15 +36,15 @@ class AndroidPlayGamesGateway(private val activity: Activity) : PlayGamesGateway
             if (!result.isAuthenticated) return@withTimeout ConnectionResult.NotConnected
             val players = PlayGames.getPlayersClient(activity)
             stage = "current_player"
-            val player = players.currentPlayer.awaitResult()
-            stage = "player_identity_check"
-            // Account settings may change while the profile request is in flight.
-            if (players.currentPlayerId.awaitResult() != player.playerId) {
-                diagnostic(stage, "mismatch")
-                return@withTimeout ConnectionResult.Failed
+            // Use Player.playerId consistently for identity and profile data. Do not compare it to
+            // the separate getCurrentPlayerId representation, which can differ on real devices.
+            val identity = readStablePlayGamesPlayer {
+                val player = players.currentPlayer.awaitResult()
+                PlayGamesPlayer(player.playerId, player.displayName.orEmpty())
             }
-            diagnostic(stage, "connected")
-            ConnectionResult.Connected(PlayGamesPlayer(player.playerId, player.displayName.orEmpty()))
+            stage = "player_identity_check"
+            diagnostic(stage, if (identity is ConnectionResult.Connected) "connected" else "changed_or_missing")
+            identity
         }
     } catch (_: TimeoutCancellationException) {
         diagnostic(stage, "timeout")
