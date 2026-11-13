@@ -41,11 +41,12 @@ device. We cannot see or access any of it.
   screen after closing the app in the background.
 - **First-launch progress:** whether you have completed or skipped the first-launch
   introduction and tutorial.
-- **The current round:** the hidden number, your guesses, the player mode,
-  difficulty, and which guess used the Medium hint are kept while a round is
-  in progress, so Android can restore the round without restoring a spent hint
-  if it closes the app in the background. This also includes the hidden number
-  in Double Player mode.
+- **Round history and statistics:** local profile and round identifiers, hidden
+  numbers, guesses, pending input, player mode, difficulty, hint use, outcomes,
+  and times are retained to restore play and calculate your totals. This
+  includes Double Player hidden numbers. Tracking starts with this update;
+  totals from earlier games are not reconstructed. A round already available
+  in Android's saved state can be restored once into the new history.
 
 You can delete all of this at any time by clearing the app's storage in your
 device's settings or by uninstalling the app.
@@ -57,6 +58,9 @@ app's settings and tutorial progress in your device backup, which Google stores
 in your Google account. This backup is managed by Android and Google under
 [Google's Privacy Policy](https://policies.google.com/privacy); we cannot
 access it. You can control backups in your device's settings.
+The round-history database is excluded from Android's automatic cloud backup
+and device-transfer rules. Its contents stay on this installation; this version
+does not yet back up game history through Play Games Saved Games.
 
 ## Google Play
 
@@ -80,7 +84,7 @@ NumbCrunch is designed for everyone, including children under 13 and
 children under 5. We do not ask children for personal details. Children can
 play without signing in. Google manages supervised Play Games profiles through
 Family Link. Parents and guardians can manage that profile through Google and
-remove the game's on-device settings and tutorial progress by clearing the
+remove the game's on-device settings, tutorial progress, and round history by clearing the
 app's storage or uninstalling it. They can contact us using the details below.
 
 ## Changes to This Policy
