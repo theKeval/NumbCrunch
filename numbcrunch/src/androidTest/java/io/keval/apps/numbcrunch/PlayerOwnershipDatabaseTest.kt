@@ -77,6 +77,7 @@ class PlayerOwnershipDatabaseTest {
         val saved = repository.createRound(round("saved", guest.id))
         repository.close()
         context.openOrCreateDatabase(name, 0, null).use { db ->
+            for (table in listOf("cloud_chunks", "cloud_manifests", "tutorial_completions", "cloud_outcomes", "remote_namespaces")) db.execSQL("DROP TABLE IF EXISTS $table")
             db.execSQL("DROP TABLE guest_claims")
             db.version = 1
         }
