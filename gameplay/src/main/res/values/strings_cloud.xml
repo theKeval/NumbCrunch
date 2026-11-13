@@ -18,7 +18,7 @@
     <string name="cloud_choose_first">All unfinished rounds will be kept. Which should appear first on Home?</string>
     <string name="cloud_keep_progress">Keep merged progress</string>
     <string name="cloud_later">Decide later</string>
-    <string name="cloud_round_description">%1$s · %2$s · %3$d guesses · %4$s</string>
+    <string name="cloud_round_description">%1$s · %2$s · %3$d guesses · %4$s · Updated %5$s</string>
     <string name="cloud_single">Single Player</string>
     <string name="cloud_double">Double Player</string>
     <string name="cloud_unfinished">Unfinished</string>

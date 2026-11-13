@@ -68,7 +68,9 @@ class SqliteProgressRepository(
             require(existing.accountProfileId == accountProfileId) { "Guest progress already claimed" }
             return@transaction existing
         }
-        require(profileById(db, guestProfileId).pgsPlayerId == null) { "Expected guest profile" }
+        require(profileById(db, guestProfileId).pgsPlayerId == null && !CloudProgressStore.isRemoteNamespace(db, guestProfileId)) {
+            "Expected unclaimed local guest profile"
+        }
         require(profileById(db, accountProfileId).pgsPlayerId != null) { "Expected Play Games profile" }
         require(rounds(db, guestProfileId).isNotEmpty() || CloudProgressStore.outcomes(db, listOf(guestProfileId)).isNotEmpty() ||
             CloudProgressStore.tutorials(db, listOf(guestProfileId)).isNotEmpty()) { "No guest progress to import" }

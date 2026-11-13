@@ -71,6 +71,16 @@ class CloudBackupControllerTest {
         assertNull(repository.confirmedAt)
     }
 
+    @Test fun staleLocalMetadataReadCannotReviveOldAccountUi() = runBlocking {
+        val repository = FakeRepository(empty)
+        val controller = CloudBackupController(repository)
+        var current = true
+        repository.confirmedAt = 10
+        repository.beforeLastBackupRead = { current = false; controller.disconnected() }
+        controller.synchronize("player", 2, SavedGamesGateway { _, _ -> error("Stale account must not reach SDK") }) { current }
+        assertEquals(CloudBackupState(), controller.state.value)
+    }
+
     @Test fun divergentVersionsRemainDurableUntilExplicitChoiceAndConfirmation() = runBlocking {
         val base = CloudRoundVersion.initial(round)
         val left = base.advance(round.editInput("1", 2))
@@ -126,10 +136,11 @@ class CloudBackupControllerTest {
         var confirmedAt: Long? = null
         var preferred: String? = null
         var importCount = 0
+        var beforeLastBackupRead: () -> Unit = {}
         override suspend fun exportCloudProgress(accountPlayerId: String) = local.also { it.validate(accountPlayerId) }
         override suspend fun pendingCloudMerge(accountPlayerId: String) = pending
         override suspend fun retainPendingMerge(accountPlayerId: String, progress: CloudProgress) { pending = progress }
-        override suspend fun lastConfirmedBackup(accountPlayerId: String) = confirmedAt
+        override suspend fun lastConfirmedBackup(accountPlayerId: String): Long? { beforeLastBackupRead(); return confirmedAt }
         override suspend fun recordConfirmedBackup(accountPlayerId: String, at: Long) { confirmedAt = at }
         override suspend fun preferredCloudRound(accountPlayerId: String) = preferred
         override suspend fun importResolvedProgress(accountPlayerId: String, progress: CloudProgress, selectedRoundId: String?) {

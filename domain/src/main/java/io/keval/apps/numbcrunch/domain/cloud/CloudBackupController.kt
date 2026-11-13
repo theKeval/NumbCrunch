@@ -20,10 +20,13 @@ class CloudBackupController(
         if (!isCurrent()) return
         mutableState.value = CloudBackupState(BackupStatus.SAVING, account, generation)
         try {
-            mutableState.value = mutableState.value.copy(lastSuccessfulBackup = repository.lastConfirmedBackup(account))
+            val lastBackup = repository.lastConfirmedBackup(account)
+            ensureCurrent(isCurrent)
+            mutableState.value = mutableState.value.copy(lastSuccessfulBackup = lastBackup)
             val local = repository.exportCloudProgress(account)
             val pending = repository.pendingCloudMerge(account)
             val initial = pending?.let { CloudMerge.merge(local, it, account).progress } ?: local
+            ensureCurrent(isCurrent)
             val result = gateway.exchange(initial) { candidate ->
                 ensureCurrent(isCurrent)
                 // Local input may have committed while the network was loading. Re-read before import.

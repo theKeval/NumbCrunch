@@ -43,6 +43,7 @@ class CloudProgressDatabaseTest {
         assertEquals(paused, b.findRound(bProfile.id, paused.id))
         assertEquals(aProfile.id, restored.associatedProfiles.single().id)
         assertNotEquals(aProfile.id, b.guestProfile().id)
+        assertTrue(runCatching { b.claimGuestProgress(aProfile.id, bProfile.id) }.isFailure)
         b.close(); b = SqliteProgressRepository(context, bName)
         assertEquals(restored, b.exportProgress(bProfile.id))
         assertEquals(0, CloudMerge.merge(cloud, b.exportCloudProgress("platform-player"), "platform-player").roundConflicts.size)
@@ -99,6 +100,43 @@ class CloudProgressDatabaseTest {
         val account = a.activatePlayerProfile("player")
         a.claimGuestProgress(owner.id, account.id)
         assertEquals(saved, a.exportCloudProgress("player").versions.single().unfinished)
+    }
+
+    @Test fun oldLocalCacheChunksArePrunedWhilePendingAndRecoveryBytesRemainReadable() = runBlocking {
+        val owner = a.activatePlayerProfile("player")
+        var current = a.createRound(round("cache", owner.id))
+        val first = a.exportCloudProgress("player")
+        a.retainPendingMerge("player", first)
+        repeat(12) { index ->
+            current = a.updateRound(current.editInput((index % 10).toString(), 11L + index), current.revision)
+            a.exportCloudProgress("player")
+        }
+        assertEquals(first, a.pendingCloudMerge("player"))
+        context.openOrCreateDatabase(aName, 0, null).use { db ->
+            val referenced = db.rawQuery("SELECT payload FROM cloud_manifests", null).use { cursor ->
+                buildSet { while (cursor.moveToNext()) addAll(CloudCodec.chunkNames(cursor.getBlob(0), "player")) }
+            }
+            val actual = db.rawQuery("SELECT name FROM cloud_chunks", null).use { cursor ->
+                buildSet { while (cursor.moveToNext()) add(cursor.getString(0)) }
+            }
+            assertEquals(referenced, actual)
+            assertEquals(2, actual.size)
+        }
+        assertEquals(current, a.exportCloudProgress("player").versions.single().unfinished)
+    }
+
+    @Test fun manyClaimedNamespacesUseBoundedSqlParameters() = runBlocking {
+        val local = b.activatePlayerProfile("player")
+        val remote = PlayerProfile("remote", "player", 1)
+        val claims = (0 until 1000).map { GuestProgressClaim("guest-$it", remote.id, 2) }
+        val completed = OutcomeFact.fromRound(round("remote-win", "guest-999").editInput("123", 11).submitGuess(12))
+        val cloud = CloudProgress("player", listOf(remote), claims,
+            listOf(CloudRoundVersion.initial(completed)), listOf(TutorialCompletion("guest-998", 13)))
+        b.importResolvedProgress("player", cloud, null)
+        val snapshot = b.exportProgress(local.id)
+        assertEquals(1002, snapshot.ownerIds.size)
+        assertEquals(1L, snapshot.statistics.wins)
+        assertEquals(1, snapshot.tutorialCompletions.size)
     }
 
     private fun round(id: String, owner: String) = RoundRecord(id, owner, RoundMode.SINGLE, Difficulty.MEDIUM, "123", 10)

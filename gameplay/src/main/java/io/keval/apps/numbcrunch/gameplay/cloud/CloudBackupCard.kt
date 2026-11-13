@@ -134,6 +134,8 @@ private fun candidateDescription(version: CloudRoundVersion): String {
     val difficulty = active?.difficulty ?: requireNotNull(outcome).difficulty
     val status = active?.status ?: requireNotNull(outcome).status
     val count = active?.guesses?.size?.toLong() ?: requireNotNull(outcome).guessCount
+    val updatedAt = active?.updatedAt ?: requireNotNull(outcome).completedAt
+    val updated = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(updatedAt))
     return stringResource(R.string.cloud_round_description,
         stringResource(if (mode == RoundMode.SINGLE) R.string.cloud_single else R.string.cloud_double),
         stringResource(difficulty.labelRes), count, stringResource(when (status) {
@@ -141,5 +143,5 @@ private fun candidateDescription(version: CloudRoundVersion): String {
             RoundStatus.WON -> R.string.cloud_won
             RoundStatus.GIVEN_UP -> R.string.cloud_given_up
             RoundStatus.ABANDONED -> R.string.cloud_abandoned
-        }))
+        }), updated)
 }
