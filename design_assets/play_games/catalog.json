@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "projectId": "552743622678",
+  "achievements": [
+    {"key":"learning_the_ropes","name":"Learning the ropes","description":"Visit all three Tutorial pages and solve the practice puzzle before finishing.","steps":1,"points":5},
+    {"key":"first_solo_solve","name":"First solo solve","description":"Win your first Single Player round at any difficulty.","steps":1,"points":10},
+    {"key":"getting_the_hang_of_it","name":"Getting the hang of it","description":"Win three Single Player rounds at any difficulty.","steps":3,"points":15},
+    {"key":"double_digits","name":"Double digits","description":"Win ten Single Player rounds at any difficulty.","steps":10,"points":30},
+    {"key":"persistent_puzzler","name":"Persistent puzzler","description":"Win 25 Single Player rounds at any difficulty.","steps":25,"points":50},
+    {"key":"century_solver","name":"Century solver","description":"Win 100 Single Player rounds at any difficulty.","steps":100,"points":150},
+    {"key":"medium_mastered","name":"Medium mastered","description":"Win one Single Player Medium round.","steps":1,"points":20},
+    {"key":"hard_earned","name":"Hard earned","description":"Win one Single Player Hard round.","steps":1,"points":30},
+    {"key":"hard_regular","name":"Hard regular","description":"Win ten Single Player Hard rounds.","steps":10,"points":65},
+    {"key":"unaided_deduction","name":"Unaided deduction","description":"Win ten Single Player Medium rounds without using the hint.","steps":10,"points":75}
+  ],
+  "leaderboard": {
+    "key":"lifetime_single_hard_wins_v1",
+    "name":"Lifetime Hard wins",
+    "description":"All-time Single Player Hard wins. Every eligible win counts once.",
+    "ordering":"LARGER_IS_BETTER",
+    "format":"NUMERIC",
+    "decimalPlaces":0,
+    "icon":"lifetime_single_hard_wins_v1.png"
+  }
+}

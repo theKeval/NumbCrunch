@@ -24,6 +24,8 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
 - Persist round state and outcomes locally, with duplicate-safe statistics and
   retryable save errors. Keep unfinished rounds recoverable after app closure;
   explicit pause/resume controls and the Statistics screen follow separately.
+- Define ten achievements and all-time Single Player Hard win scoring, with
+  original Play Games artwork and validated progress projections for integration.
 
 ## 1.1.0 (versionCode 3) — internal and closed testing
 

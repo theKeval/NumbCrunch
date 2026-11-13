@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="achievement_learning_the_ropes_name">Learning the ropes</string>
+    <string name="achievement_learning_the_ropes_description">Visit all three Tutorial pages and solve the practice puzzle before finishing.</string>
+    <string name="achievement_first_solo_solve_name">First solo solve</string>
+    <string name="achievement_first_solo_solve_description">Win your first Single Player round at any difficulty.</string>
+    <string name="achievement_getting_the_hang_of_it_name">Getting the hang of it</string>
+    <string name="achievement_getting_the_hang_of_it_description">Win three Single Player rounds at any difficulty.</string>
+    <string name="achievement_double_digits_name">Double digits</string>
+    <string name="achievement_double_digits_description">Win ten Single Player rounds at any difficulty.</string>
+    <string name="achievement_persistent_puzzler_name">Persistent puzzler</string>
+    <string name="achievement_persistent_puzzler_description">Win 25 Single Player rounds at any difficulty.</string>
+    <string name="achievement_century_solver_name">Century solver</string>
+    <string name="achievement_century_solver_description">Win 100 Single Player rounds at any difficulty.</string>
+    <string name="achievement_medium_mastered_name">Medium mastered</string>
+    <string name="achievement_medium_mastered_description">Win one Single Player Medium round.</string>
+    <string name="achievement_hard_earned_name">Hard earned</string>
+    <string name="achievement_hard_earned_description">Win one Single Player Hard round.</string>
+    <string name="achievement_hard_regular_name">Hard regular</string>
+    <string name="achievement_hard_regular_description">Win ten Single Player Hard rounds.</string>
+    <string name="achievement_unaided_deduction_name">Unaided deduction</string>
+    <string name="achievement_unaided_deduction_description">Win ten Single Player Medium rounds without using the hint.</string>
+</resources>
