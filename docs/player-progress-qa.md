@@ -27,6 +27,11 @@ On 13 November 2026:
   at `/private/tmp/numbcrunch-five-stats-draft.jpg`.
 - The version guard accepted 1.2.0/code 4 after release tag v1.1.0/code 3.
   No per-ticket version increment was introduced.
+- Both `PlayerExperienceMatrixTest` acceptance cases passed. Release manifest
+  processing and the release runtime dependency report also succeeded without
+  assembling a release artifact. The merged manifest retains the production
+  package, API 24 minimum/API 36 target, project metadata and backup rules;
+  the dependency graph contains pinned PGS 22.1.0 and no Firebase SDK.
 
 `PlayerExperienceMatrixTest` adds explicit cross-feature cases for all six
 mode/difficulty combinations and the 4/7/10 guesses example. The latter
@@ -48,6 +53,13 @@ had not yet installed either system image. The QA agent did not replace or
 stop the coordinator's installer and used no additional large images. AVDs
 are temporary test devices; never change the phone's Google accounts or clear
 its game data to make a test pass.
+
+Android Emulator 37.2.13 subsequently installed and its Hypervisor.Framework
+check passed. The requested API 24 image is also being staged in a separate
+temporary SDK root to download in parallel safely, reusing existing accepted
+license records; no new terms were accepted. It does not write the main SDK
+installer's package directories. These setup checks are not emulator runtime
+or Google-services coverage.
 
 The final combined run must record its commit SHA, actual test counts, device
 API/build, and failures/retests. Check all of the following without marking an
