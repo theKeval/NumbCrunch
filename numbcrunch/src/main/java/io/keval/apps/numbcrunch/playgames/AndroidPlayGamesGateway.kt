@@ -1,6 +1,8 @@
 package io.keval.apps.numbcrunch.playgames
 
 import android.app.Activity
+import android.content.pm.ApplicationInfo
+import android.util.Log
 import com.google.android.gms.common.ConnectionResult as GoogleConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.ApiException
@@ -19,28 +21,49 @@ import kotlin.coroutines.resumeWithException
 
 /** An Activity-scoped request. Never retain this gateway in a repository or ViewModel. */
 class AndroidPlayGamesGateway(private val activity: Activity) : PlayGamesGateway {
-    override suspend fun authenticate(interactive: Boolean): ConnectionResult = try {
+    override suspend fun authenticate(interactive: Boolean): ConnectionResult {
+        var stage = "availability"
+        return try {
         withTimeout(if (interactive) 120_000L else 20_000L) {
-            if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(activity) != GoogleConnectionResult.SUCCESS) {
-                return@withTimeout ConnectionResult.Unavailable
-            }
+            val availability = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(activity)
+            diagnostic(stage, "checked", availability)
+            if (availability != GoogleConnectionResult.SUCCESS) return@withTimeout ConnectionResult.Unavailable
             val signIn = PlayGames.getGamesSignInClient(activity)
+            stage = if (interactive) "manual_sign_in" else "authentication_check"
             val result = (if (interactive) signIn.signIn() else signIn.isAuthenticated()).awaitResult()
+            diagnostic(stage, if (result.isAuthenticated) "authenticated" else "not_authenticated")
             if (!result.isAuthenticated) return@withTimeout ConnectionResult.NotConnected
             val players = PlayGames.getPlayersClient(activity)
+            stage = "current_player"
             val player = players.currentPlayer.awaitResult()
+            stage = "player_identity_check"
             // Account settings may change while the profile request is in flight.
-            if (players.currentPlayerId.awaitResult() != player.playerId) return@withTimeout ConnectionResult.Failed
+            if (players.currentPlayerId.awaitResult() != player.playerId) {
+                diagnostic(stage, "mismatch")
+                return@withTimeout ConnectionResult.Failed
+            }
+            diagnostic(stage, "connected")
             ConnectionResult.Connected(PlayGamesPlayer(player.playerId, player.displayName.orEmpty()))
         }
     } catch (_: TimeoutCancellationException) {
+        diagnostic(stage, "timeout")
         ConnectionResult.Failed
     } catch (cancelled: CancellationException) {
+        diagnostic(stage, "lifecycle_cancelled")
         throw cancelled
     } catch (error: ApiException) {
+        diagnostic(stage, "api_failure", error.statusCode)
         if (error.statusCode == CommonStatusCodes.CANCELED) ConnectionResult.Cancelled else ConnectionResult.Failed
     } catch (_: Exception) {
+        diagnostic(stage, "failure")
         ConnectionResult.Failed
+    }
+    }
+
+    private fun diagnostic(stage: String, result: String, statusCode: Int? = null) {
+        if (activity.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            Log.d("NumbCrunchPlayGames", "stage=$stage result=$result status=$statusCode")
+        }
     }
 }
 
