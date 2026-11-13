@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -27,7 +28,7 @@ class SqliteProgressRepository(
     private val changes = MutableStateFlow(0L)
 
     override suspend fun guestProfile(): PlayerProfile = transaction { db ->
-        profile(db, null) ?: newProfile(db, null)
+        guest(db)
     }
 
     override suspend fun profileForPlayer(pgsPlayerId: String): PlayerProfile {
@@ -35,17 +36,63 @@ class SqliteProgressRepository(
         return transaction { db -> profile(db, pgsPlayerId) ?: newProfile(db, pgsPlayerId) }
     }
 
+    override suspend fun activatePlayerProfile(pgsPlayerId: String): PlayerProfile = transaction { db ->
+        require(pgsPlayerId.isNotBlank()) { "Missing platform association" }
+        val account = profile(db, pgsPlayerId) ?: newProfile(db, pgsPlayerId)
+        if (metadata(db, "last_connected_profile") != account.id) {
+            setMetadata(db, "selected_profile", account.id)
+            setMetadata(db, "last_connected_profile", account.id)
+        }
+        account
+    }
+
+    override suspend fun selectedProfile(): PlayerProfile = transaction { db -> selected(db) }
+
+    override suspend fun selectProfile(profileId: String): PlayerProfile = transaction { db ->
+        val chosen = profileById(db, profileId)
+        require(claimForGuest(db, profileId) == null) { "Guest progress already belongs to an account" }
+        setMetadata(db, "selected_profile", chosen.id)
+        chosen
+    }
+
+    override fun observeSelectedProfile(): Flow<PlayerProfile> = changes.map { read { db -> selected(db) } }
+        .distinctUntilChanged()
+
+    override suspend fun claimGuestProgress(guestProfileId: String, accountProfileId: String): GuestProgressClaim = transaction { db ->
+        val existing = claimForGuest(db, guestProfileId)
+        if (existing != null) {
+            require(existing.accountProfileId == accountProfileId) { "Guest progress already claimed" }
+            return@transaction existing
+        }
+        require(profileById(db, guestProfileId).pgsPlayerId == null) { "Expected guest profile" }
+        require(profileById(db, accountProfileId).pgsPlayerId != null) { "Expected Play Games profile" }
+        require(rounds(db, guestProfileId).isNotEmpty()) { "No guest progress to import" }
+        val claim = GuestProgressClaim(guestProfileId, accountProfileId, now())
+        db.insertOrThrow("guest_claims", null, ContentValues().apply {
+            put("guest_profile_id", claim.guestProfileId)
+            put("account_profile_id", claim.accountProfileId)
+            put("claimed_at", claim.claimedAt)
+        })
+        if (metadata(db, "selected_profile") == guestProfileId) setMetadata(db, "selected_profile", accountProfileId)
+        claim
+    }
+
     override fun observeRounds(ownerId: String): Flow<List<RoundRecord>> = changes.map {
         read { rounds(it, ownerId) }
     }
 
     override suspend fun findRound(ownerId: String, roundId: String): RoundRecord? = read { db ->
-        find(db, roundId)?.takeIf { it.ownerId == ownerId }
+        find(db, roundId)?.takeIf { it.ownerId in ownerIds(db, ownerId) }
     }
 
     override suspend fun unfinishedRound(ownerId: String): RoundRecord? = read { db ->
-        unfinished(db, ownerId)
+        unfinished(db, ownerId).let { rounds ->
+            if (rounds.size > 1) throw UnfinishedRoundException()
+            rounds.singleOrNull()
+        }
     }
+
+    override suspend fun unfinishedRounds(ownerId: String): List<RoundRecord> = read { db -> unfinished(db, ownerId) }
 
     override suspend fun createRound(round: RoundRecord): RoundRecord = transaction { db ->
         round.validate()
@@ -57,6 +104,8 @@ class SqliteProgressRepository(
             if (existing != round) throw RoundConflictException()
             existing
         } else {
+            require(claimForGuest(db, round.ownerId) == null) { "Start new rounds in the account profile" }
+            if (unfinished(db, round.ownerId).isNotEmpty()) throw UnfinishedRoundException()
             insert(db, round)
             round
         }
@@ -101,7 +150,7 @@ class SqliteProgressRepository(
             require(it.moveToFirst()) { "Unknown progress owner" }
             it.toProfile()
         }
-        ProgressSnapshot(profile = owner, rounds = rounds(db, ownerId))
+        ProgressSnapshot(profile = owner, rounds = rounds(db, ownerId), guestClaims = claims(db, ownerId))
     }
 
     /** Used when an application/test instance is being destroyed, never during an active write. */
@@ -126,7 +175,7 @@ class SqliteProgressRepository(
     }
 
     private fun insert(db: SQLiteDatabase, round: RoundRecord) {
-        if (!round.status.isTerminal && unfinished(db, round.ownerId) != null) throw UnfinishedRoundException()
+        if (!round.status.isTerminal && unfinished(db, round.ownerId).any { it.ownerId == round.ownerId }) throw UnfinishedRoundException()
         db.insertOrThrow("rounds", null, values(round))
     }
 
@@ -135,15 +184,55 @@ class SqliteProgressRepository(
             if (it.moveToFirst()) it.toRound() else null
         }
 
-    private fun unfinished(db: SQLiteDatabase, ownerId: String): RoundRecord? =
-        db.query("rounds", null, "owner_id = ? AND status IN ('ACTIVE', 'PAUSED')", arrayOf(ownerId), null, null, null).use {
-            if (it.moveToFirst()) it.toRound() else null
-        }
+    private fun unfinished(db: SQLiteDatabase, ownerId: String): List<RoundRecord> =
+        rounds(db, ownerId).filter { !it.status.isTerminal }
 
-    private fun rounds(db: SQLiteDatabase, ownerId: String): List<RoundRecord> =
-        db.query("rounds", null, "owner_id = ?", arrayOf(ownerId), null, null, "created_at, id").use { cursor ->
+    private fun rounds(db: SQLiteDatabase, ownerId: String): List<RoundRecord> {
+        val owners = ownerIds(db, ownerId)
+        return db.query("rounds", null, "owner_id IN (${owners.joinToString { "?" }})", owners.toTypedArray(), null, null, "created_at, id").use { cursor ->
             buildList { while (cursor.moveToNext()) add(cursor.toRound()) }
         }
+    }
+
+    private fun ownerIds(db: SQLiteDatabase, ownerId: String): List<String> =
+        listOf(ownerId) + claims(db, ownerId).map { it.guestProfileId }
+
+    private fun claims(db: SQLiteDatabase, accountId: String): List<GuestProgressClaim> =
+        db.query("guest_claims", null, "account_profile_id = ?", arrayOf(accountId), null, null, "guest_profile_id").use { cursor ->
+            buildList { while (cursor.moveToNext()) add(cursor.toClaim()) }
+        }
+
+    private fun claimForGuest(db: SQLiteDatabase, guestId: String): GuestProgressClaim? =
+        db.query("guest_claims", null, "guest_profile_id = ?", arrayOf(guestId), null, null, null).use {
+            if (it.moveToFirst()) it.toClaim() else null
+        }
+
+    private fun guest(db: SQLiteDatabase): PlayerProfile =
+        db.rawQuery("SELECT * FROM profiles WHERE pgs_player_id IS NULL AND id NOT IN (SELECT guest_profile_id FROM guest_claims) ORDER BY tracking_started_at, id LIMIT 1", null)
+            .use { if (it.moveToFirst()) it.toProfile() else null } ?: newProfile(db, null)
+
+    private fun selected(db: SQLiteDatabase): PlayerProfile {
+        val selectedId = metadata(db, "selected_profile")
+        if (selectedId != null) return profileById(db, selectedId)
+        return guest(db).also { setMetadata(db, "selected_profile", it.id) }
+    }
+
+    private fun profileById(db: SQLiteDatabase, id: String): PlayerProfile =
+        db.query("profiles", null, "id = ?", arrayOf(id), null, null, null).use {
+            require(it.moveToFirst()) { "Unknown progress owner" }
+            it.toProfile()
+        }
+
+    private fun metadata(db: SQLiteDatabase, key: String): String? =
+        db.query("metadata", arrayOf("value"), "key = ?", arrayOf(key), null, null, null).use {
+            if (it.moveToFirst()) it.getString(0) else null
+        }
+
+    private fun setMetadata(db: SQLiteDatabase, key: String, value: String) {
+        db.insertWithOnConflict("metadata", null, ContentValues().apply {
+            put("key", key); put("value", value)
+        }, SQLiteDatabase.CONFLICT_REPLACE)
+    }
 
     private fun profile(db: SQLiteDatabase, association: String?): PlayerProfile? =
         db.query("profiles", null, if (association == null) "pgs_player_id IS NULL" else "pgs_player_id = ?",
@@ -162,7 +251,7 @@ class SqliteProgressRepository(
     companion object { const val DATABASE_NAME = "player_progress.db" }
 }
 
-private class ProgressDatabase(context: Context, name: String) : SQLiteOpenHelper(context, name, null, 1) {
+private class ProgressDatabase(context: Context, name: String) : SQLiteOpenHelper(context, name, null, 2) {
     override fun onConfigure(db: SQLiteDatabase) { db.setForeignKeyConstraintsEnabled(true) }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -178,11 +267,19 @@ private class ProgressDatabase(context: Context, name: String) : SQLiteOpenHelpe
         db.execSQL("CREATE INDEX rounds_by_owner ON rounds(owner_id, created_at, id)")
         db.execSQL("CREATE UNIQUE INDEX unfinished_by_owner ON rounds(owner_id) WHERE status IN ('ACTIVE', 'PAUSED')")
         db.execSQL("CREATE TABLE metadata (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)")
+        createClaims(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // Fail closed until a tested, data-preserving migration is supplied for the next schema.
-        error("Unsupported progress schema migration: $oldVersion to $newVersion")
+        require(oldVersion == 1 && newVersion == 2) { "Unsupported progress schema migration" }
+        createClaims(db)
+    }
+
+    private fun createClaims(db: SQLiteDatabase) {
+        db.execSQL("""CREATE TABLE guest_claims (
+            guest_profile_id TEXT PRIMARY KEY NOT NULL REFERENCES profiles(id),
+            account_profile_id TEXT NOT NULL REFERENCES profiles(id), claimed_at INTEGER NOT NULL
+        )""")
     }
 }
 
@@ -208,3 +305,5 @@ private fun Cursor.toRound() = RoundRecord(
     currentInput = string("current_input"), hintedGuessIndex = nullableLong("hinted_guess_index")?.toInt(),
     startedAt = nullableLong("started_at"), completedAt = nullableLong("completed_at"),
 ).also { it.validate() }
+
+private fun Cursor.toClaim() = GuestProgressClaim(string("guest_profile_id"), string("account_profile_id"), long("claimed_at"))
