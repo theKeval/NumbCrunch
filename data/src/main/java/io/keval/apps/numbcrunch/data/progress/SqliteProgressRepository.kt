@@ -185,11 +185,13 @@ class SqliteProgressRepository(
         }
 
     private fun unfinished(db: SQLiteDatabase, ownerId: String): List<RoundRecord> =
-        rounds(db, ownerId).filter { !it.status.isTerminal }
+        rounds(db, ownerId, unfinishedOnly = true)
 
-    private fun rounds(db: SQLiteDatabase, ownerId: String): List<RoundRecord> {
+    private fun rounds(db: SQLiteDatabase, ownerId: String, unfinishedOnly: Boolean = false): List<RoundRecord> {
         val owners = ownerIds(db, ownerId)
-        return db.query("rounds", null, "owner_id IN (${owners.joinToString { "?" }})", owners.toTypedArray(), null, null, "created_at, id").use { cursor ->
+        val selection = "owner_id IN (${owners.joinToString { "?" }})" +
+            if (unfinishedOnly) " AND status IN ('ACTIVE', 'PAUSED')" else ""
+        return db.query("rounds", null, selection, owners.toTypedArray(), null, null, "created_at, id").use { cursor ->
             buildList { while (cursor.moveToNext()) add(cursor.toRound()) }
         }
     }

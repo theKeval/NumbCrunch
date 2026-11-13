@@ -92,8 +92,8 @@ and `PlayerGameEvent`. The [Google SDK setup guide](https://developers.google.co
 and [release notes](https://developers.google.com/android/guides/releases)
 document this version and the Android 7.0/API 24 baseline. Shared libraries
 retain their lower minimum because they do not depend on the Play Games SDK.
-SDK initialization runs for both debug and release; only diagnostic sign-in
-logging is debug-only. This dependency upgrade does not yet record Game Stats.
+SDK initialization and connection state run for both debug and release;
+player identities are not written to diagnostic logs. This dependency upgrade does not yet record Game Stats.
 
 Use a Google Play-enabled device with an existing Play Games profile. The
 profile's Google account must be listed in Play Console's Play Games Services
@@ -101,14 +101,19 @@ testers and, while OAuth is in Testing, in Google Cloud's OAuth test users.
 The Android credential for `io.keval.apps.numbcrunch.debug` must match the
 SHA-1 of the certificate that signed the installed debug APK.
 
-Install and launch the debug build using the commands above, then run:
+Install and launch the debug build using the commands above. The Home connection
+card reports the actual production authentication result. Returning profiles
+are checked automatically on resume. **Connect Play Games** calls Google's
+manual sign-in flow, including profile creation when supported; cancelling
+keeps local play available. Automatic profile-creation prompts remain suppressed.
+Account changes happen in device Play Games settings; the app has no custom
+Google sign-out or browser flow.
 
-```bash
-adb logcat -d -s NumbCrunchPlayGames:D
-```
-
-Look for `Authenticated: true` from the latest launch. The SDK signs in at
-startup and suppresses automatic prompts to create a Play Games profile.
+Connection status is separate from backup: progress remains device-only until
+cloud backup is implemented. Selected local profiles survive offline launches.
+Guest history is added to one account only after confirmation, with immutable
+round owners and IDs retained. Both saved rounds survive a guest/account merge.
+See [player connection](player-connection.md) for integration and verification.
 
 For SDK upgrades, build and lint the debug app, run domain/gameplay unit tests,
 and inspect `:numbcrunch:dependencies --configuration releaseRuntimeClasspath`

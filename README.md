@@ -45,7 +45,7 @@ About presents NumbCrunch's family origin story, credits, installed version, and
 a Privacy policy button that opens the full policy inside the game; nothing in
 the app links out to a website. All three reuse the wooden game theme.
 The new app includes music and sound-effect settings, but does **not yet
-implement vibration settings, in-game profiles, or scoreboards**.
+implement vibration settings or scoreboards**.
 
 ## Game Rules
 
@@ -101,8 +101,11 @@ See the [architecture guide](docs/architecture.md) and
 - JUnit 4 tests
 
 Gameplay works offline and without an account. Google Play Games Services
-can authenticate players with an existing profile at launch. Friend secrets
-are handed to Game in memory. Once a round starts, a local SQLite database
+can authenticate returning players at launch; **Connect Play Games** opens
+Google’s sign-in/profile-creation flow on request. Player progress stays on this
+device until cloud backup is added. Local histories remain separate by player,
+and guest history is imported only after confirmation. Friend secrets are
+handed to Game in memory. Once a round starts, a local SQLite database
 stores its secret, guesses, difficulty, hint use and outcome across launches.
 Entering Game restores any unfinished guest round. Local statistics begin with
 this update; no historical totals are invented. See

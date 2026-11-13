@@ -40,7 +40,8 @@ data class ProgressSnapshot(
         it.guestProfileId
     }
     val statistics: PlayerStatistics get() {
-        require(rounds.all { it.ownerId in ownerIds }) { "Wrong progress owner" }
+        val owners = ownerIds
+        require(rounds.all { it.ownerId in owners }) { "Wrong progress owner" }
         return PlayerStatistics.fromRounds(rounds)
     }
 }
