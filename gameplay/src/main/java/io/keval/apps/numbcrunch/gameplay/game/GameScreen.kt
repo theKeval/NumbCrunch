@@ -60,7 +60,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import io.keval.apps.numbcrunch.core.ui.artwork.rememberArtworkPainter
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -252,7 +252,7 @@ fun GameScreen(
             .swipeToGoBack(enabled = remarkInfo == null, offset = swipeOffset, onSwipe = onBack),
     ) {
         Image(
-            painter = painterResource(id = R.drawable.home_background),
+            painter = rememberArtworkPainter(id = R.drawable.home_background),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
@@ -465,7 +465,7 @@ private fun GameHeader(
             contentAlignment = Alignment.Center,
         ) {
             Image(
-                painter = painterResource(id = R.drawable.home_title),
+                painter = rememberArtworkPainter(id = R.drawable.home_title),
                 contentDescription = stringResource(R.string.cd_game_title),
                 modifier = Modifier
                     .width(metrics.titleWidth)

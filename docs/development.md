@@ -199,6 +199,12 @@ to regenerate them. Play effects through `LocalGameSoundPlayer` or
 - Avoid runtime dependencies on source-design directories.
 - Maintain content descriptions for interactive image controls; decorative
   images should remain hidden from accessibility semantics.
+- Load bundled raster artwork with `rememberArtworkPainter` in `:core-ui`.
+  Its shared 16 MiB byte-bounded cache keeps one decoded copy of the five current
+  images (about 13 MiB), including during navigation transitions on small heaps.
+  Android resource selection and density determine reuse; the cache retains no
+  Activity or Resources and never recycles pixels that an active painter owns.
+  Keep vectors on `painterResource`. Check cache capacity if adding artwork.
 
 ## Changing Guesser V1
 

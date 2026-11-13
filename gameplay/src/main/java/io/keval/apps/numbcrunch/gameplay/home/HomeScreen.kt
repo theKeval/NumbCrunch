@@ -36,7 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import io.keval.apps.numbcrunch.core.ui.artwork.rememberArtworkPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -157,7 +157,7 @@ fun HomeScreen(
 
     Surface(modifier = modifier.fillMaxSize()) {
         val scrollState = rememberScrollState()
-        val titlePainter = painterResource(id = R.drawable.home_title)
+        val titlePainter = rememberArtworkPainter(id = R.drawable.home_title)
         val intrinsicSize = titlePainter.intrinsicSize
         val titleAspectRatio = if (intrinsicSize.height > 0f) {
             intrinsicSize.width / intrinsicSize.height
@@ -220,7 +220,7 @@ fun HomeScreen(
             val betweenControls = betweenControlsBase * scale
 
             Image(
-                painter = painterResource(id = R.drawable.home_background),
+                painter = rememberArtworkPainter(id = R.drawable.home_background),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,

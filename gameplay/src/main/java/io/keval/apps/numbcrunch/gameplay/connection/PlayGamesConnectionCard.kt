@@ -23,7 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import io.keval.apps.numbcrunch.core.ui.artwork.rememberArtworkPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -82,7 +82,7 @@ fun PlayGamesConnectionCard(
     WoodPanel(R.drawable.game_keypad_wood, NumbCrunchChocolateDark.copy(alpha = 0.88f), modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Image(painterResource(R.drawable.play_games_controller), contentDescription = null, modifier = Modifier.size(32.dp))
+                Image(rememberArtworkPainter(R.drawable.play_games_controller), contentDescription = null, modifier = Modifier.size(32.dp))
                 Text(stringResource(R.string.play_games_title), color = NumbCrunchGoldCream,
                     fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 if (session.busy) CircularProgressIndicator(Modifier.size(20.dp), color = NumbCrunchGoldCream, strokeWidth = 2.dp)
