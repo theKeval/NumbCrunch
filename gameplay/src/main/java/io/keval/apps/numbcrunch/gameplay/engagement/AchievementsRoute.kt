@@ -46,12 +46,14 @@ fun AchievementsRoute(modifier: Modifier = Modifier) {
             try { awaitCancellation() } finally { binding.surfaceActive(token, false) }
         }
     }
-    val connected = session.connectedAccountId != null
+    val authenticated = session.connectedAccountId != null
+    val connected = authenticated && session.selectedProfile?.id == session.connectedAccountId
     val backup = LocalCloudBackup.current?.state?.collectAsStateWithLifecycle()?.value
     val ready = backup?.let { it.reconciliationReady && it.choice == null && !it.invalidData &&
         it.generation == session.generation && it.accountPlayerId == session.player?.id } == true
     val currentSync = sync.takeIf { it.scope?.generation == session.generation && it.scope?.playerId == session.player?.id }
     val message = when {
+        authenticated && !connected -> R.string.achievements_select_player
         !connected -> R.string.achievements_connect_explanation
         screen == AchievementScreenStatus.CONFIGURATION_ERROR || currentSync?.status == AchievementSyncStatus.CONFIGURATION_ERROR -> R.string.achievements_configuration_error
         screen == AchievementScreenStatus.UNAVAILABLE -> R.string.achievements_unavailable
@@ -66,11 +68,15 @@ fun AchievementsRoute(modifier: Modifier = Modifier) {
         Text(stringResource(message), color = NumbCrunchGoldCream,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
         Button(
-            onClick = if (connected) binding.open else connection.connect,
+            onClick = when { connected -> binding.open; authenticated -> connection.selectAccount; else -> connection.connect },
             enabled = !session.busy && screen != AchievementScreenStatus.OPENING,
             modifier = Modifier.heightIn(min = 48.dp),
             colors = ButtonDefaults.buttonColors(containerColor = NumbCrunchOrangeTop, contentColor = NumbCrunchChocolateDark),
-        ) { Text(stringResource(if (connected) R.string.achievements_view else R.string.achievements_connect)) }
+        ) { Text(stringResource(when {
+            connected -> R.string.achievements_view
+            authenticated -> R.string.play_games_view_account
+            else -> R.string.achievements_connect
+        })) }
         if (connected && currentSync?.status == AchievementSyncStatus.RETRY) {
             TextButton(onClick = binding.retry, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.achievements_retry), color = NumbCrunchGoldCream)

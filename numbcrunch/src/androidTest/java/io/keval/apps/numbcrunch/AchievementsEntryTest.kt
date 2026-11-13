@@ -28,8 +28,9 @@ class AchievementsEntryTest {
         val session = MutableStateFlow(PlayerSession())
         var connects = 0
         var opens = 0
+        var selections = 0
         val activeSurfaces = mutableSetOf<Any>()
-        val connection = PlayerConnectionBinding(session, { connects++ }, {}, {}, {}, {}, {})
+        val connection = PlayerConnectionBinding(session, { connects++ }, {}, {}, {}, { selections++ }, {})
         val achievements = AchievementsBinding(MutableStateFlow(AchievementSyncState()),
             MutableStateFlow(AchievementScreenStatus.IDLE), { opens++ }, {},
             { token, active -> if (active) activeSurfaces.add(token) else activeSurfaces.remove(token) })
@@ -45,7 +46,14 @@ class AchievementsEntryTest {
             assertEquals(0, opens)
             assertEquals(1, activeSurfaces.size)
             session.value = PlayerSession(status = ConnectionStatus.CONNECTED,
-                player = PlayGamesPlayer("player", "Player"), accountProfile = PlayerProfile("local", "player", 1))
+                player = PlayGamesPlayer("player", "Player"), accountProfile = PlayerProfile("local", "player", 1),
+                selectedProfile = PlayerProfile("guest", null, 1))
+        }
+        compose.onNodeWithText(context.getString(R.string.play_games_view_account)).performClick()
+        compose.runOnIdle {
+            assertEquals(1, selections)
+            assertEquals(0, opens)
+            session.value = session.value.copy(selectedProfile = session.value.accountProfile)
         }
         compose.onNodeWithText(context.getString(R.string.achievements_view)).performClick()
         compose.runOnIdle { assertEquals(1, opens) }

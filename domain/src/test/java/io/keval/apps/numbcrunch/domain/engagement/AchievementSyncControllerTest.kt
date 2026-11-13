@@ -100,7 +100,7 @@ class AchievementSyncControllerTest {
 
     @Test fun `cloud ready must cover the exact facts and authenticated generation`() {
         val session = PlayerSession(status = ConnectionStatus.CONNECTED, player = PlayGamesPlayer("player-A", "Player"),
-            accountProfile = PlayerProfile("profile-A", "player-A", 1), generation = 1)
+            accountProfile = PlayerProfile("profile-A", "player-A", 1), selectedProfile = PlayerProfile("profile-A", "player-A", 1), generation = 1)
         val ready = CloudBackupState(accountPlayerId = "player-A", generation = 1, reconciliationReady = true, reconciledStamp = "old-facts")
         assertTrue(scope.isReconciled(session, ready, "old-facts"))
         assertFalse(scope.isReconciled(session, ready, "new-win"))
@@ -109,5 +109,6 @@ class AchievementSyncControllerTest {
         assertFalse(scope.isReconciled(session, ready.copy(accountPlayerId = "player-B"), "old-facts"))
         assertFalse(scope.isReconciled(session.copy(generation = 2), ready, "old-facts"))
         assertFalse(scope.isReconciled(session.copy(importing = true), ready, "old-facts"))
+        assertFalse(scope.isReconciled(session.copy(selectedProfile = PlayerProfile("guest", null, 1)), ready, "old-facts"))
     }
 }

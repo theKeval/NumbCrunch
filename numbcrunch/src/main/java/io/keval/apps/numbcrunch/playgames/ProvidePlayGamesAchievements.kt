@@ -61,7 +61,7 @@ fun ProvidePlayGamesAchievements(
     val account = player.accountProfile
     val candidate = player.player?.id?.let { id -> account?.id?.let { AchievementScope(id, it, player.generation) } }
     val eligible = candidate?.takeIf { activeSurfaces.isNotEmpty() && !player.busy &&
-        player.connectedAccountId == it.profileId && account?.pgsPlayerId == it.playerId &&
+        player.connectedAccountId == it.profileId && player.selectedProfile?.id == it.profileId && account?.pgsPlayerId == it.playerId &&
         backup.accountPlayerId == it.playerId && backup.generation == it.generation &&
         backup.reconciliationReady && backup.choice == null && !backup.invalidData }
     LaunchedEffect(eligible, backup.reconciledStamp, retry) {
@@ -89,7 +89,7 @@ fun ProvidePlayGamesAchievements(
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { if (connected(scope)) screen.value = AchievementScreenStatus.UNAVAILABLE }
     }
-    LaunchedEffect(player.generation) { screen.value = AchievementScreenStatus.IDLE }
+    LaunchedEffect(player.generation, player.selectedProfile?.id) { screen.value = AchievementScreenStatus.IDLE }
     val binding = remember(session, cloud, launcher) {
         AchievementsBinding(
             sync = controller.state,

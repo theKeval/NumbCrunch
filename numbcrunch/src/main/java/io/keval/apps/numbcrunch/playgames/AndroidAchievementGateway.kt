@@ -10,7 +10,8 @@ import com.google.android.gms.tasks.Task
 import io.keval.apps.numbcrunch.R
 import io.keval.apps.numbcrunch.domain.engagement.*
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
+import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -31,26 +32,26 @@ class AndroidAchievementGateway(private val activity: Activity) : AchievementGat
     val isConfigured: Boolean get() = ids.size == AchievementKey.entries.size &&
         ids.values.all { it.matches(Regex("Cgk[A-Za-z0-9_-]+")) } && ids.values.distinct().size == ids.size
 
-    override suspend fun unlock(playerId: String, key: AchievementKey, stillCurrent: () -> Boolean) = withTimeout(20_000L) {
+    override suspend fun unlock(playerId: String, key: AchievementKey, stillCurrent: () -> Boolean) = withTimeoutOrNull(20_000L) {
         validatePlayer(playerId, stillCurrent)
         PlayGames.getAchievementsClient(activity).unlockImmediate(id(key)).awaitAchievementResult()
         validatePlayer(playerId, stillCurrent)
-    }
+    } ?: throw IOException("Achievement update timed out")
 
-    override suspend fun setSteps(playerId: String, key: AchievementKey, steps: Int, stillCurrent: () -> Boolean) = withTimeout(20_000L) {
+    override suspend fun setSteps(playerId: String, key: AchievementKey, steps: Int, stillCurrent: () -> Boolean) = withTimeoutOrNull(20_000L) {
         require(steps > 0)
         validatePlayer(playerId, stillCurrent)
         PlayGames.getAchievementsClient(activity).setStepsImmediate(id(key), steps).awaitAchievementResult()
         validatePlayer(playerId, stillCurrent)
-    }
+    } ?: throw IOException("Achievement update timed out")
 
-    suspend fun nativeIntent(playerId: String, stillCurrent: () -> Boolean): Intent = withTimeout(20_000L) {
+    suspend fun nativeIntent(playerId: String, stillCurrent: () -> Boolean): Intent = withTimeoutOrNull(20_000L) {
         if (!isConfigured) throw AchievementConfigurationException()
         validatePlayer(playerId, stillCurrent)
         val intent = PlayGames.getAchievementsClient(activity).achievementsIntent.awaitAchievementResult()
         validatePlayer(playerId, stillCurrent)
         intent
-    }
+    } ?: throw IOException("Achievement panel timed out")
 
     private fun id(key: AchievementKey): String {
         if (!isConfigured) throw AchievementConfigurationException()

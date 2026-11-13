@@ -25,7 +25,7 @@ data class AchievementScope(val playerId: String, val profileId: String, val gen
 
 fun AchievementScope.isCurrent(session: PlayerSession): Boolean = !session.busy &&
     session.generation == generation && session.player?.id == playerId &&
-    session.connectedAccountId == profileId && session.accountProfile?.pgsPlayerId == playerId
+    session.connectedAccountId == profileId && session.selectedProfile?.id == profileId && session.accountProfile?.pgsPlayerId == playerId
 
 fun AchievementScope.isReconciled(session: PlayerSession, backup: CloudBackupState, projectionStamp: String?): Boolean =
     isCurrent(session) && backup.accountPlayerId == playerId && backup.generation == generation &&

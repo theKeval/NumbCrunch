@@ -22,12 +22,15 @@ it opens, preserves page/practice evidence across recreation, and waits for the
 completion receipt to commit before final navigation. A failed write is retryable.
 
 `ProvidePlayGamesAchievements` observes committed progress only for the connected
-Play Games player and validated cloud reconciliation generation. It waits for an
+Play Games player and validated cloud reconciliation generation. Selecting Guest
+suspends account delivery and offers a switch back to the connected profile. It waits for an
 exact matching cloud projection stamp and for unresolved cloud choices to finish.
 Only resumed Home or Statistics screens permit delivery, so an achievement popup
 does not interrupt entering a guess or the reveal animation. The native
 Achievements panel is available from both screens and returns normally on Cancel.
-An unavailable SDK or offline connection never blocks local games.
+An unavailable SDK or offline connection never blocks local games. An SDK request
+that exceeds its deadline becomes a retryable error; lifecycle cancellation still
+cancels the operation without acknowledging it.
 
 Standard awards use `unlockImmediate`; incremental awards use the absolute
 cumulative `setStepsImmediate`, never an increment replay. The Activity adapter
