@@ -2,6 +2,7 @@ package io.keval.apps.numbcrunch
 
 import android.content.Context
 import io.keval.apps.numbcrunch.data.di.RepositoryModule
+import io.keval.apps.numbcrunch.domain.progress.ProgressRepository
 import io.keval.apps.numbcrunch.domain.repository.TutorialRepository
 import io.keval.apps.numbcrunch.domain.usecase.CompleteFirstRunTutorialUseCase
 import io.keval.apps.numbcrunch.domain.usecase.GetFriendSecretUseCase
@@ -16,8 +17,8 @@ import io.keval.apps.numbcrunch.gameplay.audio.NumbCrunchAudio
 class AppContainer(
     context: Context,
     tutorialRepository: TutorialRepository = RepositoryModule.createTutorialRepository(context),
+    val progressRepository: ProgressRepository = RepositoryModule.createProgressRepository(context),
 ) {
-    val progressRepository = RepositoryModule.createProgressRepository(context)
     private val appInfoRepository = RepositoryModule.createAppInfoRepository()
     private val gameSessionRepository = RepositoryModule.createGameSessionRepository()
     private val settingsRepository = RepositoryModule.createSettingsRepository(context)

@@ -4,9 +4,12 @@ import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -14,6 +17,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.core.app.ApplicationProvider
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchTheme
+import io.keval.apps.numbcrunch.data.progress.SqliteProgressRepository
 import io.keval.apps.numbcrunch.domain.repository.TutorialRepository
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.navigation.GAMEPLAY_INFO_ROUTE
@@ -22,11 +26,13 @@ import io.keval.apps.numbcrunch.gameplay.navigation.HOME_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.TUTORIAL_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.WELCOME_ROUTE
 import java.io.IOException
+import java.util.UUID
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 
@@ -34,7 +40,14 @@ class NumbCrunchNavigationTest {
     @get:Rule val compose = createComposeRule()
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val databaseName = "navigation-${UUID.randomUUID()}.db"
+    private val progressRepository = SqliteProgressRepository(context, databaseName)
     private lateinit var navController: NavHostController
+
+    @After fun closeProgress() {
+        progressRepository.close()
+        context.deleteDatabase(databaseName)
+    }
 
     @Test
     fun completedIntroductionOpensHome() {
@@ -134,7 +147,15 @@ class NumbCrunchNavigationTest {
         awaitRoute(GAME_ROUTE)
         val gameEntry = compose.runOnIdle { navController.currentBackStackEntry }
         compose.onNodeWithText(context.getString(R.string.difficulty_medium)).assertIsDisplayed()
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodes(hasContentDescription(context.getString(R.string.cd_key_digit, "1")) and isEnabled())
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNodeWithContentDescription(context.getString(R.string.cd_key_digit, "1")).performClick()
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodesWithContentDescription(context.getString(R.string.cd_active_row, 1, "1"))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNodeWithContentDescription(context.getString(R.string.cd_help)).performClick()
         awaitRoute(GAMEPLAY_INFO_ROUTE)
 
@@ -148,7 +169,7 @@ class NumbCrunchNavigationTest {
     }
 
     private fun launch(repository: FakeTutorialRepository): StateRestorationTester {
-        val container = AppContainer(context, repository)
+        val container = AppContainer(context, repository, progressRepository)
         return StateRestorationTester(compose).also { restoration ->
             restoration.setContent {
                 NumbCrunchTheme {
