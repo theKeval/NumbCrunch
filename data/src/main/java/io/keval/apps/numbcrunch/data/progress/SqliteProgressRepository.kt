@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.cloud.*
 import io.keval.apps.numbcrunch.domain.engagement.TutorialCompletion
+import io.keval.apps.numbcrunch.domain.gamestats.*
 import io.keval.apps.numbcrunch.domain.progress.*
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +25,7 @@ class SqliteProgressRepository(
     context: Context,
     databaseName: String = DATABASE_NAME,
     private val now: () -> Long = System::currentTimeMillis,
-) : ProgressRepository, CloudSyncRepository {
+) : ProgressRepository, CloudSyncRepository, GameStatsOutbox {
     private val helper = ProgressDatabase(context.applicationContext, databaseName)
     private val mutex = Mutex()
     private val changes = MutableStateFlow(0L)
@@ -132,6 +133,7 @@ class SqliteProgressRepository(
         previous.validateSuccessor(round)
         db.update("rounds", values(round), "id = ? AND revision = ?", arrayOf(round.id, expectedRevision.toString()))
             .also { if (it != 1) throw RoundConflictException() }
+        if (round.status.isTerminal) GameStatsOutboxStore.onLocalTerminal(db, round, localOwnerAccount(db, round.ownerId))
         round
     }
 
@@ -160,6 +162,24 @@ class SqliteProgressRepository(
         db.execSQL("INSERT INTO metadata(key, value) VALUES ('legacy_import', '1')")
         round
     }
+
+    override fun observePending(accountPlayerId: String): Flow<List<GameStatsDelivery>> = changes.map {
+        read { db -> GameStatsOutboxStore.pending(db, accountPlayerId) }
+    }.distinctUntilChanged()
+
+    override suspend fun claim(roundId: String, accountPlayerId: String): GameStatsDelivery? = transaction { db ->
+        GameStatsOutboxStore.claim(db, roundId, accountPlayerId)
+    }
+
+    override suspend fun finish(roundId: String, accountPlayerId: String, state: GameStatsDeliveryState) {
+        transaction { db -> GameStatsOutboxStore.finish(db, roundId, accountPlayerId, state) }
+    }
+
+    private fun localOwnerAccount(db: SQLiteDatabase, ownerId: String): String? =
+        db.rawQuery("""SELECT pgs_player_id FROM profiles WHERE id = ? AND pgs_player_id IS NOT NULL
+            UNION SELECT p.pgs_player_id FROM guest_claims g JOIN profiles p ON p.id = g.account_profile_id
+            WHERE g.guest_profile_id = ? AND p.pgs_player_id IS NOT NULL LIMIT 1""", arrayOf(ownerId, ownerId))
+            .use { if (it.moveToFirst()) it.getString(0) else null }
 
     override suspend fun exportProgress(ownerId: String): ProgressSnapshot = read { db -> snapshot(db, ownerId) }
 
@@ -313,7 +333,7 @@ class SqliteProgressRepository(
     companion object { const val DATABASE_NAME = "player_progress.db" }
 }
 
-private class ProgressDatabase(context: Context, name: String) : SQLiteOpenHelper(context, name, null, 3) {
+private class ProgressDatabase(context: Context, name: String) : SQLiteOpenHelper(context, name, null, 4) {
     override fun onConfigure(db: SQLiteDatabase) { db.setForeignKeyConstraintsEnabled(true) }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -331,12 +351,14 @@ private class ProgressDatabase(context: Context, name: String) : SQLiteOpenHelpe
         db.execSQL("CREATE TABLE metadata (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)")
         createClaims(db)
         CloudProgressStore.createSchema(db)
+        GameStatsOutboxStore.createSchema(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        require(oldVersion in 1..2 && newVersion == 3) { "Unsupported progress schema migration" }
+        require(oldVersion in 1..3 && newVersion == 4) { "Unsupported progress schema migration" }
         if (oldVersion == 1) createClaims(db)
-        CloudProgressStore.createSchema(db)
+        if (oldVersion < 3) CloudProgressStore.createSchema(db)
+        GameStatsOutboxStore.createSchema(db)
     }
 
     private fun createClaims(db: SQLiteDatabase) {

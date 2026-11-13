@@ -91,7 +91,7 @@ class CloudProgressDatabaseTest {
         val saved = a.createRound(round("saved", owner.id))
         a.close()
         context.openOrCreateDatabase(aName, 0, null).use { db ->
-            for (table in listOf("cloud_chunks", "cloud_manifests", "tutorial_completions", "cloud_outcomes", "remote_namespaces")) db.execSQL("DROP TABLE $table")
+            for (table in listOf("game_stats_outbox", "cloud_chunks", "cloud_manifests", "tutorial_completions", "cloud_outcomes", "remote_namespaces")) db.execSQL("DROP TABLE $table")
             db.version = 2
         }
         a = SqliteProgressRepository(context, aName)
