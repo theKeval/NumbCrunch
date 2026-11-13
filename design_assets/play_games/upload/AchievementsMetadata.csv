@@ -1,0 +1,10 @@
+Learning the ropes,Visit all three Tutorial pages and solve the practice puzzle before finishing.,False,,Revealed,5,1
+First solo solve,Win your first Single Player round at any difficulty.,False,,Revealed,10,2
+Getting the hang of it,Win three Single Player rounds at any difficulty.,True,3,Revealed,15,3
+Double digits,Win ten Single Player rounds at any difficulty.,True,10,Revealed,30,4
+Persistent puzzler,Win 25 Single Player rounds at any difficulty.,True,25,Revealed,50,5
+Century solver,Win 100 Single Player rounds at any difficulty.,True,100,Revealed,150,6
+Medium mastered,Win one Single Player Medium round.,False,,Revealed,20,7
+Hard earned,Win one Single Player Hard round.,False,,Revealed,30,8
+Hard regular,Win ten Single Player Hard rounds.,True,10,Revealed,65,9
+Unaided deduction,Win ten Single Player Medium rounds without using the hint.,True,10,Revealed,75,10
