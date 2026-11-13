@@ -141,8 +141,13 @@ class AndroidSavedGamesGateway(
                 val first = track(conflict.snapshot); val second = track(conflict.conflictingSnapshot)
                 val a = readBytes(first); val b = readBytes(second)
                 require(a.contentEquals(b)) { "Immutable cloud chunk conflict" }
+                client.discardAndClose(first).awaitSnapshotTask()
+                client.discardAndClose(second).awaitSnapshotTask()
                 a
-            } else readBytes(track(requireNotNull(result.data)))
+            } else {
+                val chunk = track(requireNotNull(result.data))
+                readBytes(chunk).also { client.discardAndClose(chunk).awaitSnapshotTask() }
+            }
         }
         return withContext(Dispatchers.Default) { CloudCodec.decode(manifest, chunks, accountPlayerId) }
     }
