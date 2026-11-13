@@ -157,3 +157,36 @@ unfinished round. No secret, ID or snapshot payload was logged. This is evidence
 for real Saved Games plus a fresh local store on one phone; two independent
 Google Play-enabled devices, supervised accounts and actual account A/B isolation
 remain separate release checks.
+
+
+The same phone then completed a real Single Player Hard win in six guesses,
+a genuine three-page Tutorial completion with its practice solved and final
+Play now action, and a real Single Player Medium win in six guesses without
+using a hint. The game was played through normal visible controls; the two
+wins used candidate filtering from displayed R/W clues, never a stored secret,
+injected outcome, or fabricated score. The untouched round opened by Tutorial
+completion was abandoned through the normal UI and excluded from played totals.
+
+The final debug APK was upgraded in place with data preserved. Its local
+Statistics screen showed three games played, two wins, one game left, zero
+give-ups, zero ongoing/paused rounds, and six average guesses in wins. The Hard
+leaderboard stayed at one after the Medium win; Play Games acknowledged that
+score and returned first place with score one in both Top 25 and Near me.
+Google's native achievements UI showed Learning the ropes, Hard earned, and
+First solo solve unlocked. Home returned to Saved after foreground
+reconciliation. The final contrast-build APK tested had SHA-256
+`f7f6fdbffad8b50784054183d306daa201be992047717c55488c689e84a56d9e`.
+
+A second opt-in read-only restore passed against that final build and confirmed
+four terminal receipts, no unfinished rounds, and one tutorial completion in a
+fresh temporary local database. One receipt was the unplayed Tutorial-start
+abandonment; it remained excluded from the three played games. Repeated import
+preserved statistics and ownership without enqueueing Game Stats events. All
+five server-visible Game Stats were also observed; see
+[Game Stats verification](play-games-game-stats-v1.md#recorded-phone-verification).
+
+The user explicitly limited remaining verification to the current phone.
+No independent second-device cloud restoration, fresh account/profile creation,
+supervised account, or live account A/B switch is claimed by this evidence.
+The isolated-database tests and single-phone server reads are not substitutes
+for those scenarios. No signed release or Play production upload was made.

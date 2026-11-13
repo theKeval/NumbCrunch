@@ -138,3 +138,56 @@ the user to republish the website policy after merge. This adds no Firebase
 Analytics and no duplicate legacy Events counters. Sources checked 13 November
 2026. Buffered SDK calls, Console drafts, actual server acceptance, and
 published configuration are separate milestones.
+
+
+## Recorded phone verification
+
+On 13 November 2026, the authorized API 31 tester phone performed these normal
+UI actions under its selected Play Games profile:
+
+- A Single Player Medium game submitted one guess, spent its hint, entered a
+  partial next guess, paused and resumed, then was abandoned normally.
+- A Single Player Hard game was won in six guesses.
+- All three Tutorial pages were visited, its visible practice puzzle was solved,
+  and the final Play now action was completed. The untouched game opened by that
+  action was abandoned with zero guesses.
+- A Single Player Medium game was won in six guesses without using a hint.
+
+The played games used visible feedback only. No hidden secret, outcome, event,
+achievement or score was injected. The two wins used a candidate-filtering
+solver to select normal keypad guesses; this is functional integration testing,
+not the outstanding natural-human hourly-rate calibration.
+
+The app's `NumbCrunchGameStats` diagnostics reported SDK buffering. Separately,
+the actual Play Store **You → Game stats → All** view for NumbCrunch displayed:
+
+| Displayed stat label | Observed value |
+| --- | ---: |
+| Rounds finished | 3 |
+| Puzzles solved | 2 |
+| Hard solo puzzles solved | 1 |
+| Unaided Medium solo solves | 1 |
+| Guesses in finished rounds | 13 |
+
+These visible profile counters matched the three real played outcomes:
+`1 + 6 + 6` guesses, two wins, one Hard win, and one unaided Medium win.
+The Tutorial and its zero-guess discarded round did not inflate the totals.
+This observation confirms actual profile ingestion for these events; it does
+not turn future BUFFERED callbacks into server acknowledgements or promise
+exactly-once ingestion. The specific `PlayGamesServices[GameStatsAgent]` log
+capture contained no retained lines, so no batch-upload-log claim is made.
+No fixed processing delay or waiting-period promise is inferred.
+
+In parallel, local statistics showed played 3, wins 2, games left 1, ongoing 0,
+and average guesses in wins 6. The all-time Single Player Hard leaderboard
+remained at score 1 after the Medium win. These counters survived an in-place
+debug APK upgrade; a final read-only cloud restore into a disposable database
+preserved the source facts without recreating delivery commands.
+
+Actual Double Player, give-up, offline/handoff failure, supervised restrictions,
+and account-switch ingestion cases remain separate checks from the observed
+profile values. Automated domain and transaction tests cover their local
+predicates and delivery boundaries. The user limited remaining verification to
+the existing phone, so no independent second-device result is claimed. Account
+and profile settings were not changed, and no signed release was generated or
+uploaded for this verification.
