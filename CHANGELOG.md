@@ -31,6 +31,8 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
   totals, weighted guess averages, hint use, streaks, and clear empty states.
 - Define ten achievements and all-time Single Player Hard win scoring, with
   original Play Games artwork and validated progress projections for integration.
+- Define a bounded cloud progress format that omits completed-round secrets,
+  preserves lifetime totals, and requires explicit choices for conflicting saves.
 
 ## 1.1.0 (versionCode 3) — internal and closed testing
 

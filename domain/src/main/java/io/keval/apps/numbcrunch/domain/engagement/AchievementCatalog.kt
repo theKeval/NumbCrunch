@@ -2,6 +2,7 @@ package io.keval.apps.numbcrunch.domain.engagement
 
 import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.progress.RoundRecord
+import io.keval.apps.numbcrunch.domain.progress.OutcomeFact
 
 enum class AchievementKey(val logicalKey: String) {
     LEARNING_THE_ROPES("learning_the_ropes"),
@@ -44,8 +45,15 @@ object AchievementCatalog {
         allowedOwnerIds: Set<String>,
         rounds: List<RoundRecord>,
         tutorialCompletions: List<TutorialCompletion> = emptyList(),
+    ): List<AchievementProgress> = progressFacts(allowedOwnerIds,
+        validatedRounds(allowedOwnerIds, rounds).filter { it.status.isTerminal }.map(OutcomeFact::fromRound), tutorialCompletions)
+
+    fun progressFacts(
+        allowedOwnerIds: Set<String>,
+        outcomes: List<OutcomeFact>,
+        tutorialCompletions: List<TutorialCompletion> = emptyList(),
     ): List<AchievementProgress> {
-        val wins = validatedRounds(allowedOwnerIds, rounds).filter(RoundRecord::isRecordedSoloWin)
+        val wins = validatedOutcomes(allowedOwnerIds, outcomes).filter(OutcomeFact::isRecordedSoloWin)
         tutorialCompletions.forEach {
             it.validate()
             require(it.ownerId in allowedOwnerIds) { "Tutorial outside claimed progress scope" }
@@ -53,7 +61,7 @@ object AchievementCatalog {
         val solo = wins.size
         val medium = wins.count { it.difficulty == Difficulty.MEDIUM }
         val hard = wins.count { it.difficulty == Difficulty.HARD }
-        val unaided = wins.count { it.difficulty == Difficulty.MEDIUM && it.hintedGuessIndex == null }
+        val unaided = wins.count { it.difficulty == Difficulty.MEDIUM && !it.hintUsed }
         return definitions.map { definition ->
             val count = when (definition.key) {
                 AchievementKey.LEARNING_THE_ROPES -> if (tutorialCompletions.isEmpty()) 0 else 1

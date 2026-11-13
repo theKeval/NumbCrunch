@@ -5,6 +5,7 @@ import io.keval.apps.numbcrunch.domain.progress.RoundMode
 import io.keval.apps.numbcrunch.domain.progress.RoundOrigin
 import io.keval.apps.numbcrunch.domain.progress.RoundRecord
 import io.keval.apps.numbcrunch.domain.progress.RoundStatus
+import io.keval.apps.numbcrunch.domain.progress.OutcomeFact
 
 /** Actual tutorial completion, never the completed-or-skipped onboarding preference. */
 data class TutorialCompletion(val ownerId: String, val completedAt: Long, val tutorialVersion: Int = 1) {
@@ -28,16 +29,29 @@ internal fun validatedRounds(allowedOwnerIds: Set<String>, rounds: List<RoundRec
     }
 }
 
-internal fun RoundRecord.isRecordedSoloWin(): Boolean =
-    origin == RoundOrigin.LOCAL && mode == RoundMode.SINGLE && status == RoundStatus.WON && isPlayed
+internal fun validatedOutcomes(allowedOwnerIds: Set<String>, outcomes: List<OutcomeFact>): List<OutcomeFact> {
+    require(allowedOwnerIds.isNotEmpty() && allowedOwnerIds.none(String::isBlank)) { "Missing progress scope" }
+    return outcomes.groupBy { it.id }.values.map { copies ->
+        val outcome = copies.first()
+        require(copies.all { it == outcome }) { "Unresolved outcome conflict" }
+        require(outcome.ownerId in allowedOwnerIds) { "Outcome outside claimed progress scope" }
+        outcome.also(OutcomeFact::validate)
+    }
+}
+
+internal fun OutcomeFact.isRecordedSoloWin(): Boolean =
+    origin == RoundOrigin.LOCAL && mode == RoundMode.SINGLE && status == RoundStatus.WON && guessCount > 0
 
 object LifetimeHardWins {
     const val LOGICAL_KEY = "lifetime_single_hard_wins_v1"
     const val SCORING_VERSION = 1
 
     /** Counts source facts, not counters, increments, timestamps or restored SDK submissions. */
-    fun score(allowedOwnerIds: Set<String>, rounds: List<RoundRecord>): Long =
-        validatedRounds(allowedOwnerIds, rounds).fold(0L) { score, round ->
+    fun score(allowedOwnerIds: Set<String>, rounds: List<RoundRecord>): Long = scoreFacts(allowedOwnerIds,
+        validatedRounds(allowedOwnerIds, rounds).filter { it.status.isTerminal }.map(OutcomeFact::fromRound))
+
+    fun scoreFacts(allowedOwnerIds: Set<String>, outcomes: List<OutcomeFact>): Long =
+        validatedOutcomes(allowedOwnerIds, outcomes).fold(0L) { score, round ->
             if (round.isRecordedSoloWin() && round.difficulty == Difficulty.HARD) Math.addExact(score, 1L) else score
         }
 }
