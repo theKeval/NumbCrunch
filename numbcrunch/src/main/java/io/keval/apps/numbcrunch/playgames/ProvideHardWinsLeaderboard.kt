@@ -61,19 +61,8 @@ fun ProvideHardWinsLeaderboard(
         val snapshots = progress.observeSelectedProfile().flatMapLatest { progress.observeProgress(it.id) }
             .map<ProgressSnapshot, ProgressSnapshot?> { it }.catch { emit(null) }
         combine(snapshots, sessions, backups) { snapshot, session, backup ->
-            snapshot?.takeIf { it.profile.id == session.selectedProfile?.id }?.let {
-                withContext(Dispatchers.Default) { runCatching {
-                    val playerId = session.player?.id?.takeIf { id ->
-                        session.status == ConnectionStatus.CONNECTED &&
-                            session.accountProfile?.id == it.profile.id && it.profile.pgsPlayerId == id
-                    }
-                    val stamp = it.cloudProjectionStamp()
-                    val reconciled = playerId != null && !session.busy && backup.accountPlayerId == playerId &&
-                        backup.generation == session.generation && backup.reconciliationReady && !backup.invalidData && backup.choice == null &&
-                        backup.reconciledStamp == stamp
-                    HardWinsContext(it.profile.id, session.generation,
-                        LifetimeHardWins.scoreFacts(it.ownerIds, it.completedFacts), playerId, reconciled) to stamp
-                }.getOrNull() }
+            withContext(Dispatchers.Default) {
+                runCatching { hardWinsProjection(snapshot, session, backup) }.getOrNull()
             }
         }.collectLatest { projection ->
             val context = projection?.first
@@ -86,4 +75,21 @@ fun ProvideHardWinsLeaderboard(
         load = { window -> scope.launch { controller.load(gateway, window, ::current) } },
         retrySubmission = { retry++ },
     ), content = content)
+}
+
+internal fun hardWinsProjection(
+    snapshot: ProgressSnapshot?, session: PlayerSession, backup: CloudBackupState,
+): Pair<HardWinsContext, String?>? {
+    val progress = snapshot?.takeIf { it.profile.id == session.selectedProfile?.id } ?: return null
+    val wins = LifetimeHardWins.scoreFacts(progress.ownerIds, progress.completedFacts)
+    val playerId = session.player?.id?.takeIf { id ->
+        session.status == ConnectionStatus.CONNECTED &&
+            session.accountProfile?.id == progress.profile.id && progress.profile.pgsPlayerId == id
+    }
+    // Offline/local totals do not depend on whether this profile can form a cloud payload.
+    val stamp = if (playerId == null) null else runCatching { progress.cloudProjectionStamp() }.getOrNull()
+    val reconciled = playerId != null && stamp != null && !session.busy && backup.accountPlayerId == playerId &&
+        backup.generation == session.generation && backup.reconciliationReady && !backup.invalidData &&
+        backup.choice == null && backup.reconciledStamp == stamp
+    return HardWinsContext(progress.profile.id, session.generation, wins, playerId, reconciled) to stamp
 }

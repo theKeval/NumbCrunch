@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -67,7 +66,7 @@ class MainActivity : ComponentActivity() {
             ) {
                 NumbCrunchTheme {
                     val sessions = playerConnection.connection.session
-                    GameStatsSyncEffect(this@MainActivity, sessions.collectAsStateWithLifecycle().value,
+                    GameStatsSyncEffect(this@MainActivity, sessions,
                         appContainer.progressRepository as? GameStatsOutbox)
                     ProvideCloudBackup(appContainer.progressRepository, sessions) {
                         val backups = LocalCloudBackup.current?.state
