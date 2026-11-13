@@ -27,6 +27,8 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
 - Show Play Games connection and player selection on Home, with an optional
   Connect action and confirmed one-time guest-history import. Keep offline
   play and each player's local progress separate.
+- Add offline Statistics with combined mode/difficulty filters, win and leave
+  totals, weighted guess averages, hint use, streaks, and clear empty states.
 - Define ten achievements and all-time Single Player Hard win scoring, with
   original Play Games artwork and validated progress projections for integration.
 
