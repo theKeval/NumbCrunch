@@ -44,6 +44,8 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
   profile visibility, separate deletion controls, and age-dependent availability.
 - Recover an open game when cloud reconciliation replaces its saved version,
   and prevent stale branches or interrupted SDK callbacks from overwriting progress.
+- Share decoded artwork across screens to prevent memory crashes on older
+  Android devices without increasing the app's heap limit.
 
 ## 1.1.0 (versionCode 3) — internal and closed testing
 
