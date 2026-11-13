@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -15,6 +16,12 @@ import io.keval.apps.numbcrunch.gameplay.connection.LocalPlayerConnection
 import io.keval.apps.numbcrunch.gameplay.connection.PlayerConnectionBinding
 import io.keval.apps.numbcrunch.playgames.AndroidPlayGamesGateway
 import io.keval.apps.numbcrunch.playgames.PlayerConnectionViewModel
+import io.keval.apps.numbcrunch.playgames.ProvideCloudBackup
+import io.keval.apps.numbcrunch.playgames.ProvidePlayGamesAchievements
+import io.keval.apps.numbcrunch.playgames.ProvideHardWinsLeaderboard
+import io.keval.apps.numbcrunch.playgames.GameStatsSyncEffect
+import io.keval.apps.numbcrunch.domain.gamestats.GameStatsOutbox
+import io.keval.apps.numbcrunch.gameplay.cloud.LocalCloudBackup
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -59,7 +66,21 @@ class MainActivity : ComponentActivity() {
                 ),
             ) {
                 NumbCrunchTheme {
-                    NumbCrunchApp(appContainer = appContainer)
+                    val sessions = playerConnection.connection.session
+                    GameStatsSyncEffect(this@MainActivity, sessions.collectAsStateWithLifecycle().value,
+                        appContainer.progressRepository as? GameStatsOutbox)
+                    ProvideCloudBackup(appContainer.progressRepository, sessions) {
+                        val backups = LocalCloudBackup.current?.state
+                        if (backups == null) {
+                            NumbCrunchApp(appContainer = appContainer)
+                        } else {
+                            ProvidePlayGamesAchievements(appContainer.progressRepository, sessions, backups) {
+                                ProvideHardWinsLeaderboard(this@MainActivity, appContainer.progressRepository, sessions, backups) {
+                                    NumbCrunchApp(appContainer = appContainer)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

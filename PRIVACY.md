@@ -112,7 +112,7 @@ does not offer an in-game cloud-account deletion or progress-reset feature.
 
 If you have turned on backup for your Android device, Android may include the
 app's settings, first-launch progress, and per-player achievement acknowledgment
-cache in your device backup, which Google stores
+cache (including its Play Games player identifier) in your device backup, which Google stores
 in your Google account. This backup is managed by Android and Google under
 [Google's Privacy Policy](https://policies.google.com/privacy); we cannot
 access it. You can control backups in your device's settings.

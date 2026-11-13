@@ -43,13 +43,13 @@ import io.keval.apps.numbcrunch.gameplay.cloud.CloudBackupRoute
 
 /** Place on Home or the player screen; the Activity supplies lifecycle-bound Google actions. */
 @Composable
-fun PlayGamesConnectionRoute(modifier: Modifier = Modifier) {
+fun PlayGamesConnectionRoute(modifier: Modifier = Modifier, onLeaderboard: () -> Unit = {}) {
     val binding = LocalPlayerConnection.current ?: return
     val session by binding.session.collectAsStateWithLifecycle()
     LaunchedEffect(binding.session) { binding.refreshLocal() }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         PlayGamesConnectionCard(session, binding.connect, binding.refresh, binding.selectGuest,
-            binding.selectAccount, binding.importGuest)
+            binding.selectAccount, binding.importGuest, onLeaderboard = onLeaderboard)
         CloudBackupRoute()
     }
 }
@@ -63,6 +63,7 @@ fun PlayGamesConnectionCard(
     onSelectAccount: () -> Unit,
     onImportGuest: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onLeaderboard: () -> Unit = {},
 ) {
     var confirmingAccount by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(session.connectedAccountId) {
@@ -123,6 +124,9 @@ fun PlayGamesConnectionCard(
                 }
             }
             AchievementsRoute()
+            TextButton(onClick = onLeaderboard, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.hard_board_title), color = NumbCrunchGoldCream)
+            }
         }
     }
     confirmingAccount?.let { accountId ->

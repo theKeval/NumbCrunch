@@ -40,7 +40,7 @@ answers must include all versions currently distributed and the SDK's behavior.
 | Personal info → User IDs | Collected: game-scoped PGS identifier; account management/app functionality. Online gameplay data is optional through player selection; do not assume automatic SDK identity collection stops when Guest is selected |
 | Personal info → Name | Gamer tag/display name, not real-name collection: identify/display the connected player. Review Google's account/profile handling in the form |
 | App activity → Other actions | Gameplay outcomes, accomplishments, scores, saves; app functionality and Google gamer-profile statistics/analytics |
-| App activity → App interactions | SDK analytics and interaction telemetry as disclosed by Google; analytics/functionality. Do not mark all SDK collection optional without verifying an effective control |
+| App activity → App interactions | Mapping unconfirmed: Google's SDK page discloses analytics without an exact interaction-field list. Verify with the provider before assigning this category; do not invent page/tap telemetry or mark all automatic collection optional |
 | App info and performance → Diagnostics | SDK diagnostics; analytics/functionality. Confirm current SDK crash-log/device-ID details rather than inventing an exact field inventory |
 | Encrypted in transit | Yes for PGS transmission using HTTPS; no app-operated endpoint |
 | Ephemeral | No for stored identity/progress/events. A memory-only name does not make Google's profile data ephemeral |
