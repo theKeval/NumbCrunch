@@ -27,6 +27,11 @@ On 13 November 2026:
   at `/private/tmp/numbcrunch-five-stats-draft.jpg`.
 - The version guard accepted 1.2.0/code 4 after release tag v1.1.0/code 3.
   No per-ticket version increment was introduced.
+- Final integrated validation passed 172 JVM tests (91 domain, 79 gameplay,
+  and two app tests), debug assembly, instrumentation assembly, and debug
+  lint after the memory and filter-contrast fixes. The command was
+  `./gradlew :domain:test :gameplay:testDebugUnitTest :numbcrunch:testDebugUnitTest :numbcrunch:assembleDebug :numbcrunch:assembleDebugAndroidTest :numbcrunch:lintDebug`.
+  Output is retained at `/private/tmp/numbcrunch-integrated-validation.log`.
 - Both `PlayerExperienceMatrixTest` acceptance cases passed. Release manifest
   processing and the release runtime dependency report also succeeded without
   assembling a release artifact. The merged manifest retains the production
@@ -45,7 +50,7 @@ retained hint/input, and identical scores after a cloud round trip and merge.
 | --- | --- | --- |
 | API 24 AOSP ARM64 emulator | New minimum, no Google services, offline startup/play/pause/statistics | 37 targeted fixtures and eight ordinary resume cycles passed on 92b97ad at unchanged 48 MB heap; six contrast fixtures and rendered Statistics passed on b4f0736 |
 | API 36 AOSP ATD ARM64 emulator | Current API, no Google services, offline regressions | 28 focused fixtures passed on 9c0a2f7; 18 new/changed fixtures passed on 92b97ad; eight ordinary offline resume cycles passed |
-| Connected Play-enabled API 31 phone | Real tester identity, SDK dialogs, Saved Games, achievements, Game Stats, leaderboard | Coordinator verified Saved Games, exact scratch restore, three native achievements, and a real Single Hard score/rank; Game Stats buffered only |
+| Connected Play-enabled API 31 phone | Real tester identity, SDK dialogs, Saved Games, achievements, Game Stats, leaderboard | Verified Saved Games, exact scratch restore, three native achievements, a real Single Hard score/rank, and all five visible Play Store Game Stats totals |
 | Play-installed production package | App-signing certificate, ordinary non-allowlisted user, new/existing gamer profile | Deferred until a later authorized release and internal testing upload |
 
 Android Emulator 37.2.13 and both requested system images installed. Its
@@ -56,7 +61,12 @@ terms were accepted. The coordinator-authorized interruption of the redundant
 API 24 download avoided duplicating the already installed image. Temporary
 AVDs use one-gigabyte data images through the supported `-data` option,
 preventing the emulator's six-gigabyte new-image default from filling the disk.
-No phone account settings or existing phone game data were changed.
+No phone account settings were changed or existing game data cleared.
+After testing, both temporary emulators were stopped. The disposable AVDs and
+separate API 24 staging SDK were removed, recovering about 3.89 GiB. Logs,
+screenshots and copied test artifacts were retained; the normal SDK's API 36
+image remains installed. No further emulator or system-image download followed
+the user's explicit instruction to keep remaining verification to the phone.
 
 The copied coordinator artifacts for compatibility testing represent
 `9c0a2f7`, the memory fix `92b97ad`, and contrast fix `b4f0736` (1.2.0/code 4), retained
@@ -111,27 +121,40 @@ Logs are
 `/private/tmp/numbcrunch-api36-manual-nav.log`, and
 `/private/tmp/numbcrunch-api36-final-fixtures.log`.
 
-The coordinator reports actual tester-phone evidence on API 31 after an
-in-place upgrade to `92b97ad`: a six-guess Single Player Hard win produced an
+The coordinator recorded actual tester-phone evidence on API 31, including a
+final in-place upgrade to the `b4f0736` contrast build: a six-guess Single Player Hard win produced an
 acknowledged lifetime score of 1, read back as rank 1 in both Top 25 and Near
 me. Native Achievements showed Learning the Ropes, First Solo Solve, and Hard
 Earned earned (3/10), with Hard Regular at 10%. A real paused Medium round,
 including its spent hint and partial input, restored exactly into an isolated
 scratch database twice. Saved Games reached server-confirmed status and
 retained that state after restart. A normal abandonment reached SDK
-`BUFFERED` for Game Stats; Google ingestion/profile display is still unverified.
+`BUFFERED` for Game Stats. The tester's Play Store gamer profile subsequently
+showed all five matching totals: rounds finished 3, puzzles solved 2, Hard solo
+solves 1, unaided Medium solo solves 1, and guesses in finished rounds 13.
+This visible-profile check is distinct from the earlier SDK buffering receipt.
 Evidence includes `/private/tmp/numbcrunch-guesser16-live-restore.log` and
-`/private/tmp/numbcrunch-sprint-evidence/leaderboard-top25-one-hard-win.png`
-plus `leaderboard-near-me-one-hard-win.png` in the same directory. A later
+`/private/tmp/numbcrunch-sprint-evidence/final-contrast-hard-board.png`,
+`final-contrast-near-me.png`, `native-three-earned-achievements.png`,
+`play-store-all-game-stats.png`, and `play-store-all-game-stats-guesses.png`
+in the same directory. A later
 unaided Medium win left the Hard leaderboard at 1. The final local phone totals
 were played 3, wins 2, given up 0, left unfinished 1, ongoing 0, win rate 66.7%,
-and winning average 6. This is one
-phone and one tester account, not a two-device or account-switch proof.
+and winning average 6. A final read-only server download restored four terminal
+receipts and one tutorial completion into a disposable database; the zero-guess
+discard remained excluded from played totals, and repeated import enqueued no
+Game Stats events. The final phone Home showed Saved. This is one phone and one
+tester account, not a two-device or account-switch proof.
+
+The user explicitly chose current-phone-only live verification on 13 November
+and declined a second device or Google Play-enabled emulator download. The
+implementation handoff uses that agreed scope; the original two-device check
+is deferred and is not marked passed.
 
 The recorded checks above cover the stated configurations only. Account A/B
 switching on real devices, a newly created or supervised gamer profile, true
 two-device offline reconciliation, audible feedback/spoken TalkBack order,
-Google Game Stats ingestion/profile display, and human rate-limit calibration
+and human rate-limit calibration
 remain unverified. Preserve these acceptance/release gates and check the full
 matrix below without marking unavailable scenarios passed:
 
