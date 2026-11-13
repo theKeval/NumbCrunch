@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -126,9 +127,12 @@ fun HardWinsLeaderboardScreen(
 
 @Composable
 private fun RankingEntry(row: RankingRow) {
-    Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    val name = row.playerName.ifBlank { stringResource(R.string.hard_board_unknown_player) }
+    val spoken = stringResource(R.string.hard_board_rank_description,
+        row.rank ?: stringResource(R.string.hard_board_rank_unavailable), name, row.score)
+    Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = spoken }, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(row.rank ?: stringResource(R.string.statistics_no_value), color = NumbCrunchGoldCream, modifier = Modifier.weight(1f))
-        Text(row.playerName.ifBlank { stringResource(R.string.hard_board_unknown_player) }, color = NumbCrunchGoldCream,
+        Text(name, color = NumbCrunchGoldCream,
             modifier = Modifier.weight(3f))
         Text(row.score, color = NumbCrunchGoldCream, fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f))
     }

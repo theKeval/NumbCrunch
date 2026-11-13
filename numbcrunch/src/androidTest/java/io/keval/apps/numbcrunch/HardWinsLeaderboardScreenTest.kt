@@ -37,6 +37,8 @@ class HardWinsLeaderboardScreenTest {
         }
         compose.onNodeWithText(context.getString(R.string.hard_board_all_time)).performScrollTo().assertIsDisplayed()
         compose.onNode(hasText("玩家 with a long Unicode gamer name")).performScrollTo().assertIsDisplayed()
+        compose.onNode(hasText("玩家 with a long Unicode gamer name")).assert(hasContentDescription(
+            context.getString(R.string.hard_board_rank_description, "1", "玩家 with a long Unicode gamer name", "9,223,372,036,854,775,807")))
         compose.onNodeWithText("Daily").assertDoesNotExist()
         compose.onNodeWithText("Weekly").assertDoesNotExist()
     }

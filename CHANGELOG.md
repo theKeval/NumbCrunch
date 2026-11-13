@@ -42,6 +42,8 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
   statistics; no old history or cloud restore is replayed as new activity.
 - Update privacy and terms for Google cloud storage, shared accomplishments,
   profile visibility, separate deletion controls, and age-dependent availability.
+- Recover an open game when cloud reconciliation replaces its saved version,
+  and prevent stale branches or interrupted SDK callbacks from overwriting progress.
 
 ## 1.1.0 (versionCode 3) — internal and closed testing
 
