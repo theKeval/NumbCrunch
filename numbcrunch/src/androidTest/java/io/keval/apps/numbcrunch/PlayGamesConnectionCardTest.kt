@@ -36,7 +36,7 @@ class PlayGamesConnectionCardTest {
         compose.onNodeWithText("Connect Play Games").performClick()
         compose.runOnIdle { assertEquals(1, requests); session.value = PlayerSession(status = ConnectionStatus.CHECKING) }
         compose.onNodeWithText("Connect Play Games").assertIsNotEnabled()
-        compose.onNodeWithText("Progress is saved on this device. Connecting does not turn on cloud backup.").assertIsDisplayed()
+        compose.onNodeWithText("You can keep playing without a connection.").assertIsDisplayed()
     }
 
     @Test fun accountChangeDismissesOldGuestImportConsent() {

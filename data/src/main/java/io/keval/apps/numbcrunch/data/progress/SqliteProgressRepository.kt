@@ -105,7 +105,10 @@ class SqliteProgressRepository(
         }
     }
 
-    override suspend fun unfinishedRounds(ownerId: String): List<RoundRecord> = read { db -> unfinished(db, ownerId) }
+    override suspend fun unfinishedRounds(ownerId: String): List<RoundRecord> = read { db ->
+        val preferred = metadata(db, "cloud_selected_round:" + ownerId)
+        unfinished(db, ownerId).sortedBy { it.id != preferred }
+    }
 
     override suspend fun createRound(round: RoundRecord): RoundRecord = transaction { db ->
         round.validate()
@@ -223,6 +226,7 @@ class SqliteProgressRepository(
             CloudProgressStore.importProgress(db, account, merged.progress, rounds(db, account.id))
             CloudProgressStore.write(db, accountPlayerId, "state", merged.progress)
             db.delete("cloud_manifests", "account_id = ? AND kind = 'pending'", arrayOf(accountPlayerId))
+            CloudProgressStore.pruneChunks(db, accountPlayerId)
             if (selectedRoundId != null) setMetadata(db, "cloud_selected_round:" + account.id, selectedRoundId)
             snapshot(db, account.id).cloudProjectionStamp()
         }
@@ -276,11 +280,14 @@ class SqliteProgressRepository(
 
     private fun rounds(db: SQLiteDatabase, ownerId: String, unfinishedOnly: Boolean = false): List<RoundRecord> {
         val owners = ownerIds(db, ownerId)
-        val selection = "owner_id IN (${owners.joinToString { "?" }})" +
-            if (unfinishedOnly) " AND status IN ('ACTIVE', 'PAUSED')" else ""
-        return db.query("rounds", null, selection, owners.toTypedArray(), null, null, "created_at, id").use { cursor ->
-            buildList { while (cursor.moveToNext()) add(cursor.toRound()) }
-        }
+        // API 24 SQLite limits bound parameters; archive namespaces can exceed one statement's limit.
+        return owners.chunked(500).flatMap { batch ->
+            val selection = "owner_id IN (${batch.joinToString { "?" }})" +
+                if (unfinishedOnly) " AND status IN ('ACTIVE', 'PAUSED')" else ""
+            db.query("rounds", null, selection, batch.toTypedArray(), null, null, null).use { cursor ->
+                buildList { while (cursor.moveToNext()) add(cursor.toRound()) }
+            }
+        }.sortedWith(compareBy({ it.createdAt }, { it.id }))
     }
 
     private fun ownerIds(db: SQLiteDatabase, ownerId: String): List<String> =

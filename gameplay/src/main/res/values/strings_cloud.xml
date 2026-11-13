@@ -1,0 +1,28 @@
+<resources>
+    <string name="cloud_title">Cloud backup</string>
+    <string name="cloud_device_only">Device only</string>
+    <string name="cloud_saving">Saving…</string>
+    <string name="cloud_saved">Saved</string>
+    <string name="cloud_pending">Offline or waiting to back up</string>
+    <string name="cloud_attention">Needs attention</string>
+    <string name="cloud_device_explanation">Your progress is saved on this device. Connect Play Games to check cloud backup for this player.</string>
+    <string name="cloud_saved_explanation">This player’s progress is backed up with Google Play Games.</string>
+    <string name="cloud_pending_explanation">Your local progress is safe. You can keep playing while backup waits for a connection.</string>
+    <string name="cloud_invalid_explanation">This backup could not be read safely. Your local progress has been kept. Try again or check for an app update.</string>
+    <string name="cloud_choice_explanation">Saved progress has more than one version or unfinished round. Review the choices. Nothing is discarded by closing this window.</string>
+    <string name="cloud_last_backup">Last backed up: %1$s</string>
+    <string name="cloud_review">Review saved progress</string>
+    <string name="cloud_retry">Retry backup</string>
+    <string name="cloud_different_versions">Choose a version of this round</string>
+    <string name="cloud_choose_version">Use version %1$d: %2$s</string>
+    <string name="cloud_choose_first">All unfinished rounds will be kept. Which should appear first on Home?</string>
+    <string name="cloud_keep_progress">Keep merged progress</string>
+    <string name="cloud_later">Decide later</string>
+    <string name="cloud_round_description">%1$s · %2$s · %3$d guesses · %4$s</string>
+    <string name="cloud_single">Single Player</string>
+    <string name="cloud_double">Double Player</string>
+    <string name="cloud_unfinished">Unfinished</string>
+    <string name="cloud_won">Won</string>
+    <string name="cloud_given_up">Given up</string>
+    <string name="cloud_abandoned">Abandoned</string>
+</resources>

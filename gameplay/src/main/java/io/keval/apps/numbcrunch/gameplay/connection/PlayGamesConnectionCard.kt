@@ -39,6 +39,7 @@ import io.keval.apps.numbcrunch.domain.connection.PlayerSession
 import io.keval.apps.numbcrunch.gameplay.engagement.AchievementsRoute
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.game.WoodPanel
+import io.keval.apps.numbcrunch.gameplay.cloud.CloudBackupRoute
 
 /** Place on Home or the player screen; the Activity supplies lifecycle-bound Google actions. */
 @Composable
@@ -46,8 +47,11 @@ fun PlayGamesConnectionRoute(modifier: Modifier = Modifier) {
     val binding = LocalPlayerConnection.current ?: return
     val session by binding.session.collectAsStateWithLifecycle()
     LaunchedEffect(binding.session) { binding.refreshLocal() }
-    PlayGamesConnectionCard(session, binding.connect, binding.refresh, binding.selectGuest,
-        binding.selectAccount, binding.importGuest, modifier)
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        PlayGamesConnectionCard(session, binding.connect, binding.refresh, binding.selectGuest,
+            binding.selectAccount, binding.importGuest)
+        CloudBackupRoute()
+    }
 }
 
 @Composable
@@ -84,7 +88,7 @@ fun PlayGamesConnectionCard(
             }
             Text(statusText, color = NumbCrunchGoldCream,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-            Text(stringResource(R.string.play_games_device_only), color = NumbCrunchGoldCream,
+            Text(stringResource(R.string.play_games_progress_note), color = NumbCrunchGoldCream,
                 style = MaterialTheme.typography.bodyMedium)
             if (session.selectedProfile != null) {
                 Text(stringResource(if (session.selectedProfile?.pgsPlayerId == null)

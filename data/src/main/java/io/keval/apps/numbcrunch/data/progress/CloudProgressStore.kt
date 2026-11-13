@@ -47,6 +47,18 @@ internal object CloudProgressStore {
         db.insertWithOnConflict("cloud_manifests", null, ContentValues().apply {
             put("account_id", account); put("kind", kind); put("payload", bundle.manifest)
         }, SQLiteDatabase.CONFLICT_REPLACE)
+        pruneChunks(db, account)
+    }
+
+    /** Only local unreferenced chunks are removed; pending and recovery manifests keep their bytes. */
+    fun pruneChunks(db: SQLiteDatabase, account: String) {
+        val retained = db.query("cloud_manifests", arrayOf("payload"), "account_id = ?", arrayOf(account), null, null, null).use { cursor ->
+            buildSet { while (cursor.moveToNext()) addAll(CloudCodec.chunkNames(cursor.getBlob(0), account)) }
+        }
+        val obsolete = db.query("cloud_chunks", arrayOf("name"), "account_id = ?", arrayOf(account), null, null, null).use { cursor ->
+            buildList { while (cursor.moveToNext()) if (cursor.getString(0) !in retained) add(cursor.getString(0)) }
+        }
+        obsolete.forEach { db.delete("cloud_chunks", "account_id = ? AND name = ?", arrayOf(account, it)) }
     }
 
     fun project(db: SQLiteDatabase, snapshot: ProgressSnapshot): CloudProgress {
@@ -77,17 +89,21 @@ internal object CloudProgressStore {
         db.rawQuery("SELECT 1 FROM remote_namespaces WHERE profile_id = ?", arrayOf(id)).use { it.moveToFirst() }
 
     fun outcomes(db: SQLiteDatabase, owners: List<String>): List<OutcomeFact> =
-        db.query("cloud_outcomes", null, "owner_id IN (${owners.joinToString { "?" }})", owners.toTypedArray(), null, null, "created_at, id").use { cursor ->
-            buildList { while (cursor.moveToNext()) add(cursor.outcome()) }
-        }
+        owners.chunked(500).flatMap { batch ->
+            db.query("cloud_outcomes", null, "owner_id IN (${batch.joinToString { "?" }})", batch.toTypedArray(), null, null, null).use { cursor ->
+                buildList { while (cursor.moveToNext()) add(cursor.outcome()) }
+            }
+        }.sortedWith(compareBy({ it.createdAt }, { it.id }))
 
     fun hasOutcome(db: SQLiteDatabase, id: String): Boolean =
         db.rawQuery("SELECT 1 FROM cloud_outcomes WHERE id = ?", arrayOf(id)).use { it.moveToFirst() }
 
     fun tutorials(db: SQLiteDatabase, owners: List<String>): List<TutorialCompletion> =
-        db.query("tutorial_completions", null, "owner_id IN (${owners.joinToString { "?" }})", owners.toTypedArray(), null, null, "owner_id, version").use { cursor ->
-            buildList { while (cursor.moveToNext()) add(TutorialCompletion(cursor.string("owner_id"), cursor.long("completed_at"), cursor.long("version").toInt())) }
-        }
+        owners.chunked(500).flatMap { batch ->
+            db.query("tutorial_completions", null, "owner_id IN (${batch.joinToString { "?" }})", batch.toTypedArray(), null, null, null).use { cursor ->
+                buildList { while (cursor.moveToNext()) add(TutorialCompletion(cursor.string("owner_id"), cursor.long("completed_at"), cursor.long("version").toInt())) }
+            }
+        }.sortedWith(compareBy({ it.ownerId }, { it.tutorialVersion }))
 
     fun recordTutorial(db: SQLiteDatabase, completion: TutorialCompletion) {
         completion.validate()
