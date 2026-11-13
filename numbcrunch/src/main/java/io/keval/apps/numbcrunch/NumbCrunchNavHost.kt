@@ -40,6 +40,8 @@ import io.keval.apps.numbcrunch.gameplay.progress.NewRoundRequest
 import io.keval.apps.numbcrunch.gameplay.progress.RoundDestination
 import io.keval.apps.numbcrunch.gameplay.progress.RoundEntryViewModel
 import io.keval.apps.numbcrunch.gameplay.progress.RoundEntryDialogs
+import io.keval.apps.numbcrunch.gameplay.statistics.StatisticsRoute
+import io.keval.apps.numbcrunch.gameplay.navigation.STATISTICS_ROUTE
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.about.AboutScreen
 import io.keval.apps.numbcrunch.gameplay.common.NumbCrunchScreenScaffold
@@ -203,6 +205,7 @@ fun NumbCrunchNavHost(
                 onGameplayClick = { navController.navigate(GAMEPLAY_INFO_ROUTE) },
                 onAboutClick = { navController.navigate(ABOUT_ROUTE) },
                 onSettingsClick = { navController.navigate(SETTINGS_ROUTE) { launchSingleTop = true } },
+                onStatisticsClick = { navController.navigate(STATISTICS_ROUTE) { launchSingleTop = true } },
                 ongoingRounds = progressState.ongoingRounds,
                 onResumeRound = roundEntry::resume,
                 progressLoadFailed = progressState.hasReadError,
@@ -316,6 +319,16 @@ fun NumbCrunchNavHost(
                 setSoundEffectsEnabled = appContainer.setSoundEffectsEnabledUseCase,
                 onBack = navController::navigateUp,
             )
+        }
+
+        composable(
+            route = STATISTICS_ROUTE,
+            enterTransition = { slideInFromRight() },
+            exitTransition = { slideOutToLeft() },
+            popEnterTransition = { slideInFromLeft() },
+            popExitTransition = { slideOutToRight() },
+        ) {
+            StatisticsRoute(appContainer.progressRepository, navController::navigateUp)
         }
 
         composable(

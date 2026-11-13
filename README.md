@@ -111,6 +111,8 @@ Home offers Resume for saved rounds; starting another requires an explicit
 choice. Save & pause preserves pending input and the Medium hint. Local statistics begin with
 this update; no historical totals are invented. See
 [Durable player progress](docs/player-progress.md) for storage and backup rules.
+Home's [Statistics screen](docs/statistics.md) shows personal totals with mode
+and difficulty filters, including while offline.
 
 NumbCrunch requires Android 7.0 (API 24) or later. Devices on Android 5 or 6
 can keep an installed older version but cannot receive this update. The legacy

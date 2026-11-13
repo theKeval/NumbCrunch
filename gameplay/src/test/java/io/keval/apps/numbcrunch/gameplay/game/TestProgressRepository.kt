@@ -3,6 +3,8 @@ package io.keval.apps.numbcrunch.gameplay.game
 import io.keval.apps.numbcrunch.domain.progress.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.emitAll
 
 internal class TestProgressRepository : ProgressRepository {
     private val profiles = mutableMapOf("guest" to PlayerProfile("guest", null, 1))
@@ -11,6 +13,7 @@ internal class TestProgressRepository : ProgressRepository {
     val records = MutableStateFlow<List<RoundRecord>>(emptyList())
     var failNextWrite = false
     var failAfterNextCreate = false
+    var failReads = false
     private var importedLegacy = false
     override suspend fun guestProfile(): PlayerProfile = profiles.values.firstOrNull { profile ->
         profile.pgsPlayerId == null && claims.value.none { it.guestProfileId == profile.id }
@@ -28,7 +31,10 @@ internal class TestProgressRepository : ProgressRepository {
         return claim
     }
     private fun owners(ownerId: String) = setOf(ownerId) + claims.value.filter { it.accountProfileId == ownerId }.map { it.guestProfileId }
-    override fun observeRounds(ownerId: String) = combine(records, claims) { rounds, _ -> rounds.filter { it.ownerId in owners(ownerId) } }
+    override fun observeRounds(ownerId: String) = flow {
+        if (failReads) error("Injected read failure")
+        emitAll(combine(records, claims) { rounds, _ -> rounds.filter { it.ownerId in owners(ownerId) } })
+    }
     override suspend fun findRound(ownerId: String, roundId: String) = records.value.find { it.id == roundId && it.ownerId in owners(ownerId) }
     override suspend fun unfinishedRounds(ownerId: String) = records.value.filter { it.ownerId in owners(ownerId) && !it.status.isTerminal }
     override suspend fun unfinishedRound(ownerId: String) = unfinishedRounds(ownerId).let {

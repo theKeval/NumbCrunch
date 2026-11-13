@@ -225,6 +225,11 @@ synthesized sounds and music/sound-effect settings (no vibration setting).
 
 ## Scope Not Yet Implemented in the Revamp
 
-The Compose app currently has no vibration setting, player-facing statistics
-screen, profile switching, cloud backup, achievements, leaderboard, timer or
-daily puzzle. Local round/statistics storage and PGS startup sign-in are present.
+Home's Statistics screen shows lifetime totals for the selected local profile.
+Mode and difficulty filters combine; ongoing/paused rounds do not count as
+leaves or enter the resolved-game win-rate denominator. See
+[Player statistics](statistics.md) for formulas, empty states and accessibility.
+
+The Compose app currently has no vibration setting, cloud backup, achievements,
+leaderboard, timer or daily puzzle. Local statistics, pause/resume and the
+Play Games connection flow are present.

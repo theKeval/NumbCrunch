@@ -77,6 +77,7 @@ fun HomeRoute(
     onGameplayClick: () -> Unit,
     onAboutClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onStatisticsClick: () -> Unit = {},
     ongoingRounds: List<OngoingRound> = emptyList(),
     onResumeRound: (OngoingRound) -> Unit = {},
     progressLoadFailed: Boolean = false,
@@ -104,6 +105,7 @@ fun HomeRoute(
         onGameplayClick = onGameplayClick,
         onAboutClick = onAboutClick,
         onSettingsClick = onSettingsClick,
+        onStatisticsClick = onStatisticsClick,
         ongoingRounds = ongoingRounds,
         onResumeRound = onResumeRound,
         progressLoadFailed = progressLoadFailed,
@@ -124,6 +126,7 @@ fun HomeScreen(
     onGameplayClick: () -> Unit,
     onAboutClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onStatisticsClick: () -> Unit = {},
     ongoingRounds: List<OngoingRound> = emptyList(),
     onResumeRound: (OngoingRound) -> Unit = {},
     progressLoadFailed: Boolean = false,
@@ -187,7 +190,7 @@ fun HomeScreen(
             }
 
             // Tutorial and About, plus Gameplay when its guide is enabled.
-            val secondaryButtonCount = if (GAMEPLAY_GUIDE_ENABLED) 3f else 2f
+            val secondaryButtonCount = if (GAMEPLAY_GUIDE_ENABLED) 4f else 3f
             val controlsHeightBase =
                 toggleHeightBase +
                     betweenControlsBase +
@@ -274,6 +277,7 @@ fun HomeScreen(
                         onTutorialClick = onTutorialClick,
                         onGameplayClick = onGameplayClick,
                         onAboutClick = onAboutClick,
+                        onStatisticsClick = onStatisticsClick,
                     )
 
                     PlayGamesConnectionRoute(Modifier.widthIn(max = 420.dp).padding(top = 16.dp))
@@ -320,6 +324,7 @@ private fun ControlsSection(
     onTutorialClick: () -> Unit,
     onGameplayClick: () -> Unit,
     onAboutClick: () -> Unit,
+    onStatisticsClick: () -> Unit,
 ) {
     PlayerModeToggle(
         playerMode = uiState.playerMode,
@@ -374,6 +379,15 @@ private fun ControlsSection(
         contentDescription = stringResource(R.string.cd_start_game),
         modifier = Modifier.width(startWidth),
         onClick = onStartClick,
+    )
+
+    Spacer(modifier = Modifier.height(controlSpacing))
+
+    HomeSecondaryButton(
+        text = stringResource(R.string.statistics_home_action),
+        contentDescription = stringResource(R.string.statistics_title),
+        modifier = Modifier.width(secondaryWidth),
+        onClick = onStatisticsClick,
     )
 
     Spacer(modifier = Modifier.height(controlSpacing))

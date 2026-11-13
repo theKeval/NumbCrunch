@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -28,6 +29,7 @@ import io.keval.apps.numbcrunch.gameplay.navigation.GAME_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.HOME_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.TUTORIAL_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.WELCOME_ROUTE
+import io.keval.apps.numbcrunch.gameplay.navigation.STATISTICS_ROUTE
 import java.io.IOException
 import java.util.UUID
 import kotlinx.coroutines.CompletableDeferred
@@ -215,6 +217,30 @@ class NumbCrunchNavigationTest {
         compose.onNodeWithText(context.getString(R.string.progress_abandon_title)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.progress_cancel)).performScrollTo().performClick()
         compose.onNodeWithText(context.getString(R.string.progress_cancel)).performScrollTo().performClick()
+        awaitRoute(HOME_ROUTE)
+        assertEquals(saved, runBlocking { progressRepository.findRound(saved.ownerId, saved.id) })
+        assertEquals(1, runBlocking { progressRepository.exportProgress(saved.ownerId) }.rounds.size)
+    }
+
+    @Test
+    fun statisticsFiltersAndBackLeaveTheSavedRoundUntouched() {
+        val saved = seedPausedRound()
+        launch(FakeTutorialRepository(completed = true))
+        awaitRoute(HOME_ROUTE)
+        compose.onNodeWithContentDescription(context.getString(R.string.statistics_title)).performScrollTo().performClick()
+        awaitRoute(STATISTICS_ROUTE)
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodesWithText(context.getString(R.string.statistics_all_modes)).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNode(hasText(context.getString(R.string.statistics_ongoing)) and hasText("1"))
+            .performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.label_single_player)).performScrollTo().performClick()
+        compose.onNode(hasText(context.getString(R.string.statistics_played)) and hasText("0"))
+            .performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.statistics_all_modes)).performScrollTo().performClick()
+        compose.onNode(hasText(context.getString(R.string.statistics_played)) and hasText("1"))
+            .performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription(context.getString(R.string.guide_back)).performClick()
         awaitRoute(HOME_ROUTE)
         assertEquals(saved, runBlocking { progressRepository.findRound(saved.ownerId, saved.id) })
         assertEquals(1, runBlocking { progressRepository.exportProgress(saved.ownerId) }.rounds.size)

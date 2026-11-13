@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="statistics_title">Statistics</string>
+    <string name="statistics_home_action">STATISTICS</string>
+    <string name="statistics_loading">Loading your statistics…</string>
+    <string name="statistics_error_title">Statistics unavailable</string>
+    <string name="statistics_error_message">Couldn’t read your saved progress. Your games are still stored on this device. Try again.</string>
+    <string name="statistics_guest">Local player</string>
+    <string name="statistics_player">Play Games player</string>
+    <string name="statistics_device_storage">These statistics are stored on this device. Play Games connection does not back them up yet.</string>
+    <string name="statistics_recorded_since">Recorded since %1$s</string>
+    <string name="statistics_no_history">Play before statistics tracking began is not included.</string>
+    <string name="statistics_filter_title">Your view</string>
+    <string name="statistics_mode_filter">Player mode</string>
+    <string name="statistics_all_modes">All modes</string>
+    <string name="statistics_all_difficulties">All difficulties</string>
+    <string name="statistics_scope">Personal totals: %1$s · %2$s</string>
+    <string name="statistics_empty">No games with submitted guesses in this view yet. Saved games are shown under Ongoing / paused.</string>
+    <string name="statistics_games_title">Games</string>
+    <string name="statistics_played">Games played</string>
+    <string name="statistics_wins">Wins</string>
+    <string name="statistics_given_up">Given up</string>
+    <string name="statistics_left">Left unfinished</string>
+    <string name="statistics_ongoing">Ongoing / paused</string>
+    <string name="statistics_win_rate">Win rate</string>
+    <string name="statistics_win_rate_help">Win rate uses resolved games: wins, give-ups and games left. Ongoing or paused games are excluded.</string>
+    <string name="statistics_guesses_title">Guesses &amp; hints</string>
+    <string name="statistics_average">Average guesses in wins</string>
+    <string name="statistics_best">Best winning guesses</string>
+    <string name="statistics_total_guesses">Total guesses</string>
+    <string name="statistics_hints">Hints used</string>
+    <string name="statistics_no_wins">Win a game in this view to see your average and best winning guesses.</string>
+    <string name="statistics_average_help">The average combines all guesses in won games. These are personal totals across the selected modes and difficulties.</string>
+    <string name="statistics_streaks_title">Win streaks</string>
+    <string name="statistics_current_streak">Current streak</string>
+    <string name="statistics_best_streak">Best streak</string>
+    <string name="statistics_streaks_help">Giving up or abandoning a started game breaks its streak. Pausing does not.</string>
+    <string name="statistics_no_value">—</string>
+    <string name="statistics_guide_title">Saved games &amp; statistics</string>
+    <string name="statistics_guide_body">Home shows your saved game and personal Statistics. Games count as played after the first valid guess. Pausing keeps the same game and does not count as leaving. Tutorial practice does not affect statistics.</string>
+</resources>

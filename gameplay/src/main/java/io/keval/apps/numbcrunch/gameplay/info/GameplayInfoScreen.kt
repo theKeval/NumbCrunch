@@ -52,6 +52,9 @@ fun GameplayInfoScreen(
         GuidePanel(stringResource(R.string.rules_controls_title)) {
             GuideBody(stringResource(R.string.rules_controls_body))
         }
+        GuidePanel(stringResource(R.string.statistics_guide_title)) {
+            GuideBody(stringResource(R.string.statistics_guide_body))
+        }
         GuidePanel(stringResource(R.string.rules_strategy_title)) {
             GuideBody(stringResource(R.string.rules_strategy_body))
         }
