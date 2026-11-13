@@ -44,6 +44,19 @@ fun ProvideHardWinsLeaderboard(
     val gateway = remember(activity) { AndroidHardWinsGateway(activity) }
     val scope = rememberCoroutineScope()
     var retry by remember { mutableIntStateOf(0) }
+    fun current(context: HardWinsContext): Boolean {
+        val session = sessions.value
+        return !session.busy && session.status == ConnectionStatus.CONNECTED &&
+            session.generation == context.generation && session.selectedProfile?.id == context.localProfileId &&
+            session.connectedAccountId == context.localProfileId && session.player?.id == context.accountPlayerId &&
+            session.accountProfile?.pgsPlayerId == context.accountPlayerId
+    }
+    fun reconciled(context: HardWinsContext, stamp: String?): Boolean {
+        val backup = backups.value
+        return current(context) && stamp != null && backup.accountPlayerId == context.accountPlayerId &&
+            backup.generation == context.generation && backup.reconciliationReady && !backup.invalidData &&
+            backup.choice == null && backup.reconciledStamp == stamp
+    }
     LaunchedEffect(progress, sessions, backups, retry) {
         val snapshots = progress.observeSelectedProfile().flatMapLatest { progress.observeProgress(it.id) }
             .map<ProgressSnapshot, ProgressSnapshot?> { it }.catch { emit(null) }
@@ -54,21 +67,23 @@ fun ProvideHardWinsLeaderboard(
                         session.status == ConnectionStatus.CONNECTED &&
                             session.accountProfile?.id == it.profile.id && it.profile.pgsPlayerId == id
                     }
-                    val reconciled = playerId != null && backup.accountPlayerId == playerId &&
-                        backup.generation == session.generation && backup.reconciliationReady && backup.choice == null &&
-                        backup.reconciledStamp == it.cloudProjectionStamp()
+                    val stamp = it.cloudProjectionStamp()
+                    val reconciled = playerId != null && !session.busy && backup.accountPlayerId == playerId &&
+                        backup.generation == session.generation && backup.reconciliationReady && !backup.invalidData && backup.choice == null &&
+                        backup.reconciledStamp == stamp
                     HardWinsContext(it.profile.id, session.generation,
-                        LifetimeHardWins.scoreFacts(it.ownerIds, it.completedFacts), playerId, reconciled)
+                        LifetimeHardWins.scoreFacts(it.ownerIds, it.completedFacts), playerId, reconciled) to stamp
                 }.getOrNull() }
             }
-        }.collectLatest { context ->
+        }.collectLatest { projection ->
+            val context = projection?.first
             controller.setContext(context)
-            controller.reconcile(gateway)
+            controller.reconcile(gateway) { reconciled(it, projection?.second) }
         }
     }
     CompositionLocalProvider(LocalHardWins provides HardWinsBinding(
         controller.state,
-        load = { window -> scope.launch { controller.load(gateway, window) } },
+        load = { window -> scope.launch { controller.load(gateway, window, ::current) } },
         retrySubmission = { retry++ },
     ), content = content)
 }

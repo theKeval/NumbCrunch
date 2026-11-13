@@ -13,13 +13,13 @@ class HardWinsLeaderboardTest {
         val submissions = mutableListOf<Pair<String, Long>>()
         var fail = false
         var gate: CompletableDeferred<Unit>? = null
-        override suspend fun submit(accountPlayerId: String, score: Long): Long {
+        override suspend fun submit(accountPlayerId: String, score: Long, stillCurrent: () -> Boolean): Long {
             submissions += accountPlayerId to score
             gate?.await()
             check(!fail)
             return score
         }
-        override suspend fun load(accountPlayerId: String, window: RankingWindow): RankingPage {
+        override suspend fun load(accountPlayerId: String, window: RankingWindow, stillCurrent: () -> Boolean): RankingPage {
             gate?.await()
             check(!fail)
             return RankingPage(listOf(RankingRow("1", "Player", "7")), null)
@@ -75,5 +75,55 @@ class HardWinsLeaderboardTest {
         board.setContext(account.copy(localWins = 3)); board.reconcile(gateway)
         assertEquals(1, gateway.submissions.size)
         assertEquals(3L, board.state.value.context?.localWins)
+    }
+
+    @Test fun metadataAndBackupUpdatesPreserveVisibleRankingsAndPendingLoads() = runBlocking {
+        val board = HardWinsLeaderboard(); val gateway = Gateway()
+        board.setContext(account); board.load(gateway)
+        board.setContext(account.copy(reconciled = false))
+        assertEquals(RankingStatus.READY, board.state.value.status)
+        assertNotNull(board.state.value.page)
+        val gate = CompletableDeferred<Unit>(); gateway.gate = gate
+        val loading = launch { board.load(gateway) }; yield()
+        board.setContext(account.copy(localWins = 8))
+        assertEquals(RankingStatus.LOADING, board.state.value.status)
+        gate.complete(Unit); loading.join()
+        assertEquals(RankingStatus.READY, board.state.value.status)
+        assertNotNull(board.state.value.page)
+    }
+
+    @Test fun unavailableSdkLoadLeavesRetryableErrorInsteadOfLoadingForever() = runBlocking {
+        val board = HardWinsLeaderboard(); val gateway = Gateway().apply { fail = true }
+        board.setContext(account); board.load(gateway)
+        assertEquals(RankingStatus.ERROR, board.state.value.status)
+        gateway.fail = false; board.load(gateway)
+        assertEquals(RankingStatus.READY, board.state.value.status)
+    }
+
+    @Test fun externalGenerationOrCoverageChangeIsCheckedBeforeSdkSubmissionAndAcknowledgement() = runBlocking {
+        val board = HardWinsLeaderboard()
+        var current = true
+        var writes = 0
+        val gate = CompletableDeferred<Unit>()
+        val started = CompletableDeferred<Unit>()
+        val gateway = object : HardWinsGateway {
+            override suspend fun submit(accountPlayerId: String, score: Long, stillCurrent: () -> Boolean): Long {
+                started.complete(Unit)
+                gate.await() // Represents an asynchronous currentPlayer lookup.
+                check(stillCurrent())
+                writes++
+                return score
+            }
+            override suspend fun load(accountPlayerId: String, window: RankingWindow, stillCurrent: () -> Boolean) = RankingPage(emptyList(), null)
+        }
+        board.setContext(account)
+        val submission = launch { board.reconcile(gateway) { current } }
+        started.await()
+        current = false // Session changes before the slower projection flow sets a new context.
+        gate.complete(Unit); submission.join()
+        assertEquals(0, writes)
+        assertEquals(ScoreDelivery.PENDING, board.state.value.delivery)
+        board.reconcile(gateway) { false }
+        assertEquals(0, writes)
     }
 }

@@ -50,4 +50,16 @@ class HardWinsLeaderboardScreenTest {
         assertEquals(1, requests)
         compose.onNodeWithText(context.getString(R.string.hard_board_local_total, "10")).performScrollTo().assertIsDisplayed()
     }
+
+    @Test fun disconnectedBoardOffersConnectWithoutDiscardingOfflineTotal() {
+        var connections = 0
+        compose.setContent { NumbCrunchTheme {
+            HardWinsLeaderboardScreen(connected.copy(status = RankingStatus.DISCONNECTED,
+                context = connected.context?.copy(accountPlayerId = null)), {}, {}, {},
+                onConnect = { connections++ })
+        } }
+        compose.onNodeWithText(context.getString(R.string.play_games_connect)).performScrollTo().performClick()
+        assertEquals(1, connections)
+        compose.onNodeWithText(context.getString(R.string.hard_board_local_total, "10")).performScrollTo().assertIsDisplayed()
+    }
 }

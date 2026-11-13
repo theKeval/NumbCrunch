@@ -25,8 +25,10 @@ import androidx.core.os.ConfigurationCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchGoldCream
 import io.keval.apps.numbcrunch.domain.engagement.*
+import io.keval.apps.numbcrunch.domain.connection.ConnectionStatus
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.common.*
+import io.keval.apps.numbcrunch.gameplay.connection.LocalPlayerConnection
 import kotlinx.coroutines.flow.StateFlow
 import java.text.NumberFormat
 import java.util.Locale
@@ -42,8 +44,13 @@ val LocalHardWins = staticCompositionLocalOf<HardWinsBinding?> { null }
 fun HardWinsLeaderboardRoute(onBack: () -> Unit) {
     val binding = LocalHardWins.current
     val state = binding?.state?.collectAsStateWithLifecycle()?.value ?: HardWinsLeaderboardState()
+    val connection = LocalPlayerConnection.current
+    val session = connection?.session?.collectAsStateWithLifecycle()?.value
+    val connected = session?.status == ConnectionStatus.CONNECTED
     LaunchedEffect(state.context?.accountPlayerId, state.context?.generation) { binding?.load(state.window) }
-    HardWinsLeaderboardScreen(state, onBack, { binding?.load(it) }, { binding?.retrySubmission() })
+    HardWinsLeaderboardScreen(state, onBack, { binding?.load(it) }, { binding?.retrySubmission() },
+        onConnect = connection?.let { if (connected) it.selectAccount else it.connect },
+        connecting = session?.busy == true, hasConnectedPlayer = connected)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -54,6 +61,9 @@ fun HardWinsLeaderboardScreen(
     onWindow: (RankingWindow) -> Unit,
     onRetrySubmission: () -> Unit,
     modifier: Modifier = Modifier,
+    onConnect: (() -> Unit)? = null,
+    connecting: Boolean = false,
+    hasConnectedPlayer: Boolean = false,
 ) {
     val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.getDefault()
     val numbers = remember(locale) { NumberFormat.getIntegerInstance(locale) }
@@ -77,6 +87,10 @@ fun HardWinsLeaderboardScreen(
         }
         if (state.status == RankingStatus.DISCONNECTED) {
             GuideBody(stringResource(R.string.hard_board_connect))
+            if (onConnect != null) GuideAction(
+                stringResource(if (hasConnectedPlayer) R.string.play_games_view_account else R.string.play_games_connect),
+                onConnect, Modifier.fillMaxWidth(), enabled = !connecting,
+            )
         } else {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 RankingWindow.entries.forEach { window ->
