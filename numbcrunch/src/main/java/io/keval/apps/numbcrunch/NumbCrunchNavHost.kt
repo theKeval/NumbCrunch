@@ -31,8 +31,15 @@ import androidx.navigation.navArgument
 import androidx.navigation.navOptions
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.keval.apps.numbcrunch.core.ui.theme.NumbCrunchOnWood
 import io.keval.apps.numbcrunch.domain.game.Difficulty
+import io.keval.apps.numbcrunch.domain.progress.RoundMode
+import io.keval.apps.numbcrunch.gameplay.progress.NewRoundRequest
+import io.keval.apps.numbcrunch.gameplay.progress.RoundDestination
+import io.keval.apps.numbcrunch.gameplay.progress.RoundEntryViewModel
+import io.keval.apps.numbcrunch.gameplay.progress.RoundEntryDialogs
 import io.keval.apps.numbcrunch.gameplay.R
 import io.keval.apps.numbcrunch.gameplay.about.AboutScreen
 import io.keval.apps.numbcrunch.gameplay.common.NumbCrunchScreenScaffold
@@ -42,6 +49,8 @@ import io.keval.apps.numbcrunch.gameplay.info.GameplayInfoScreen
 import io.keval.apps.numbcrunch.gameplay.navigation.ABOUT_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.FIRST_RUN_TUTORIAL_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.GAME_DIFFICULTY_ARGUMENT
+import io.keval.apps.numbcrunch.gameplay.navigation.GAME_OWNER_ARGUMENT
+import io.keval.apps.numbcrunch.gameplay.navigation.GAME_ROUND_ARGUMENT
 import io.keval.apps.numbcrunch.gameplay.navigation.GAMEPLAY_INFO_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.GAME_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.HOME_ROUTE
@@ -86,6 +95,20 @@ fun NumbCrunchNavHost(
     appContainer: AppContainer,
     modifier: Modifier = Modifier,
 ) {
+    val roundEntry: RoundEntryViewModel = viewModel(factory = RoundEntryViewModel.factory(appContainer.progressRepository))
+    val progressState by roundEntry.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(progressState.destination) {
+        progressState.destination?.let { destination ->
+            roundEntry.consumeDestination(destination)
+            navController.navigateToRound(destination) {
+                when (navController.currentDestination?.route) {
+                    GAME_ROUTE -> popUpTo(GAME_ROUTE) { inclusive = true }
+                    TUTORIAL_ROUTE -> popUpTo(TUTORIAL_ROUTE) { inclusive = true }
+                }
+                launchSingleTop = true
+            }
+        }
+    }
     NavHost(
         navController = navController,
         startDestination = LAUNCH_GATE_ROUTE,
@@ -171,13 +194,19 @@ fun NumbCrunchNavHost(
                     } else {
                         null
                     }
-                    appContainer.saveFriendSecretUseCase(secret)
-                    navController.navigateToGame(homeState.difficulty)
+                    roundEntry.requestStart(NewRoundRequest(
+                        mode = RoundMode.valueOf(homeState.playerMode.name), difficulty = homeState.difficulty,
+                        friendSecret = secret,
+                    ))
                 },
                 onTutorialClick = { navController.navigate(MANUAL_TUTORIAL_ROUTE) },
                 onGameplayClick = { navController.navigate(GAMEPLAY_INFO_ROUTE) },
                 onAboutClick = { navController.navigate(ABOUT_ROUTE) },
                 onSettingsClick = { navController.navigate(SETTINGS_ROUTE) { launchSingleTop = true } },
+                ongoingRounds = progressState.ongoingRounds,
+                onResumeRound = roundEntry::resume,
+                progressLoadFailed = progressState.hasReadError,
+                onRetryProgress = roundEntry::refresh,
             )
         }
 
@@ -231,10 +260,7 @@ fun NumbCrunchNavHost(
                         if (firstRun) completeFirstRun() else navController.navigateUp()
                     },
                     onPlay = {
-                        appContainer.saveFriendSecretUseCase(null)
-                        navController.navigateToGame(Difficulty.HARD) {
-                            popUpTo(TUTORIAL_ROUTE) { inclusive = true }
-                        }
+                        roundEntry.requestStart(NewRoundRequest(RoundMode.SINGLE, Difficulty.HARD))
                     },
                     isFirstRun = firstRun,
                     onCompleteFirstRun = completeFirstRun,
@@ -297,7 +323,8 @@ fun NumbCrunchNavHost(
             arguments = listOf(navArgument(GAME_DIFFICULTY_ARGUMENT) {
                 type = NavType.StringType
                 defaultValue = Difficulty.HARD.name
-            }),
+            }, navArgument(GAME_OWNER_ARGUMENT) { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument(GAME_ROUND_ARGUMENT) { type = NavType.StringType; nullable = true; defaultValue = null }),
             enterTransition = { slideInFromRight() },
             exitTransition = { slideOutToLeft() },
             popEnterTransition = { slideInFromLeft() },
@@ -305,6 +332,9 @@ fun NumbCrunchNavHost(
         ) { entry ->
             GameRoute(
                 progressRepository = appContainer.progressRepository,
+                ownerId = entry.arguments?.getString(GAME_OWNER_ARGUMENT),
+                roundId = entry.arguments?.getString(GAME_ROUND_ARGUMENT),
+                onRequestNewRound = roundEntry::requestStart,
                 friendSecretNumber = appContainer.getFriendSecretUseCase(),
                 difficulty = Difficulty.fromName(entry.arguments?.getString(GAME_DIFFICULTY_ARGUMENT))
                     ?: Difficulty.HARD,
@@ -323,15 +353,16 @@ fun NumbCrunchNavHost(
             )
         }
     }
+    RoundEntryDialogs(progressState, roundEntry)
 }
 
-private fun NavHostController.navigateToGame(
-    difficulty: Difficulty,
+private fun NavHostController.navigateToRound(
+    round: RoundDestination,
     options: NavOptionsBuilder.() -> Unit = {},
 ) {
     // Keep the original destination ID so pre-difficulty back stacks can still restore.
     val destination = checkNotNull(graph.findNode(GAME_ROUTE))
-    navigate(destination.id, bundleOf(GAME_DIFFICULTY_ARGUMENT to difficulty.name), navOptions(options))
+    navigate(destination.id, bundleOf(GAME_OWNER_ARGUMENT to round.ownerId, GAME_ROUND_ARGUMENT to round.roundId), navOptions(options))
 }
 
 @Composable

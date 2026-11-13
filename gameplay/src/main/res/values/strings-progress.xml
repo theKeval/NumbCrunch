@@ -5,4 +5,27 @@
     <string name="progress_retry">Try again</string>
     <string name="progress_keep_playing">Keep playing</string>
     <string name="progress_back_home">Back to Home</string>
+    <string name="progress_paused_game">Your paused game</string>
+    <string name="progress_ongoing_game">Your ongoing game</string>
+    <string name="progress_round_summary">%1$s · %2$s</string>
+    <string name="progress_resume">Resume</string>
+    <string name="progress_resume_description">Resume %1$s, %2$s game</string>
+    <plurals name="progress_submitted_guesses">
+        <item quantity="one">%d guess submitted</item>
+        <item quantity="other">%d guesses submitted</item>
+    </plurals>
+    <string name="progress_save_pause">Save &amp; pause</string>
+    <string name="progress_continue">Continue playing</string>
+    <string name="progress_cancel">Cancel</string>
+    <string name="progress_pause_title">Pause this game?</string>
+    <string name="progress_pause_message">Save your place and resume from Home, or abandon this game. Pausing does not count as leaving.</string>
+    <string name="progress_abandon_title">Abandon this game?</string>
+    <string name="progress_abandon_message">This ends the saved game. If you have submitted a guess, it counts as a game left unfinished.</string>
+    <string name="progress_abandon_confirm">Abandon game</string>
+    <string name="progress_abandon_this">Abandon this game…</string>
+    <string name="progress_existing_title">A game is already saved</string>
+    <string name="progress_existing_message">Resume a saved game, or abandon it before starting another. Each saved game is kept until you choose.</string>
+    <string name="progress_saving_title">Saving your game</string>
+    <string name="progress_saving_message">Please wait while your progress is saved on this device.</string>
+    <string name="progress_load_failed">Couldn’t load saved games.</string>
 </resources>

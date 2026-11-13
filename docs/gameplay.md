@@ -123,14 +123,17 @@ process and `AppContainer` live.
   confetti. Single Player offers **PLAY AGAIN** and **HOME**; Double Player
   offers **HOME**.
 - Back (header or system) or a horizontal swipe in either direction during an
-  unfinished round asks for confirmation before recording abandonment and
-  returning Home. A failed save keeps the player in the round with retry.
+  unfinished round offers **Save & pause**, **Abandon game**, or **Continue
+  playing**. Save & pause commits before returning Home. A failed save keeps
+  the player in the round with retry; abandoning is counted once only after a
+  submitted guess.
 - **SHOW** asks for confirmation, then ends the round and shows a popup
   revealing the secret number; **HOME**, Back, or tapping outside returns Home.
 - Settings opens Settings. Returning resumes the same durable round. Help,
   Settings and backgrounding do not count as losses. Entering Game after a
-  restart restores an unfinished guest round; an explicit Home resume card and
-  pause choice are subsequent work.
+  restart uses the Home saved-game card. It identifies mode, difficulty and
+  guess count without revealing the secret or clues. Starting another game
+  requires resuming or explicitly abandoning the existing save.
 
 ### Other Destinations
 

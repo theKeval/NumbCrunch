@@ -64,6 +64,9 @@ import io.keval.apps.numbcrunch.gameplay.audio.rememberTapFeedback
 import io.keval.apps.numbcrunch.gameplay.common.labelRes
 import io.keval.apps.numbcrunch.gameplay.game.GameRoundIconButton
 import io.keval.apps.numbcrunch.gameplay.navigation.GAMEPLAY_GUIDE_ENABLED
+import io.keval.apps.numbcrunch.gameplay.progress.OngoingRound
+import io.keval.apps.numbcrunch.gameplay.progress.OngoingRoundCard
+import io.keval.apps.numbcrunch.gameplay.common.GuideAction
 
 @Composable
 fun HomeRoute(
@@ -73,6 +76,10 @@ fun HomeRoute(
     onGameplayClick: () -> Unit,
     onAboutClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    ongoingRounds: List<OngoingRound> = emptyList(),
+    onResumeRound: (OngoingRound) -> Unit = {},
+    progressLoadFailed: Boolean = false,
+    onRetryProgress: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val viewModel: HomeViewModel = viewModel(
@@ -96,6 +103,10 @@ fun HomeRoute(
         onGameplayClick = onGameplayClick,
         onAboutClick = onAboutClick,
         onSettingsClick = onSettingsClick,
+        ongoingRounds = ongoingRounds,
+        onResumeRound = onResumeRound,
+        progressLoadFailed = progressLoadFailed,
+        onRetryProgress = onRetryProgress,
         modifier = modifier,
     )
 }
@@ -112,6 +123,10 @@ fun HomeScreen(
     onGameplayClick: () -> Unit,
     onAboutClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    ongoingRounds: List<OngoingRound> = emptyList(),
+    onResumeRound: (OngoingRound) -> Unit = {},
+    progressLoadFailed: Boolean = false,
+    onRetryProgress: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     // The friend-secret keypad sheet; it opens by itself when Double Player is chosen.
@@ -232,6 +247,16 @@ fun HomeScreen(
                     )
 
                     Spacer(modifier = Modifier.height(gapAfterTitle))
+
+                    if (progressLoadFailed) {
+                        Text(stringResource(R.string.progress_load_failed), color = NumbCrunchGoldCream)
+                        GuideAction(stringResource(R.string.progress_retry), onRetryProgress)
+                        Spacer(Modifier.height(12.dp))
+                    }
+                    ongoingRounds.forEach { saved ->
+                        OngoingRoundCard(saved, { onResumeRound(saved) }, Modifier.widthIn(max = 420.dp))
+                        Spacer(Modifier.height(12.dp))
+                    }
 
                     ControlsSection(
                         uiState = uiState,

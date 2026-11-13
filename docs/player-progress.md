@@ -28,11 +28,20 @@ past rounds or statistics are invented when upgrading. Database errors keep the
 previous committed UI and expose retry; a failed exit never reports success.
 An initial load failure also permits returning Home.
 
-The database enforces one unfinished round per profile. Until the dedicated
-pause/resume Home flow lands, entering Game restores that unfinished round rather
-than replacing it with a different setup. Back/leave records abandonment; Give
-up records a distinct outcome. Help, Settings and backgrounding record neither.
-The later pause ticket adds an explicit save/pause choice and Home affordance.
+The database enforces one unfinished round per local owner. Home shows safe
+metadata and Resume for each available round. Explicit guest claims may retain
+both the guest and account round; neither is silently selected or deleted.
+Home Start, Tutorial Play Now and replay share `RoundEntryViewModel`: an occupied
+slot requires Resume or a separate confirmed abandonment before creating a
+new round. Cancelling keeps the saved game, including zero-guess games.
+
+Back/leave offers Save & pause, Continue playing or Abandon game; Give up &
+reveal remains a distinct outcome. Save & pause commits before navigating Home.
+Resuming restores the same ID, owner, mode, difficulty, secret, guesses, pending
+input and Medium hint. Help, Settings and backgrounding record no outcome.
+Round navigation carries only opaque owner/round IDs, never secrets or guesses.
+Existing rounds retain their owner after account selection changes. Each new
+round (including replay) pins the selected local owner at its start decision.
 
 ## Statistics and retention
 

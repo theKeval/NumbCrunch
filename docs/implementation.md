@@ -147,7 +147,10 @@ only after a win or Give up.
   a committed GIVEN_UP outcome, reveals the secret, and locks input.
   `QuitRevealDialog` flips the secret tiles in and returns
   Home when closed.
-- Confirmed Back/leave commits ABANDONED before navigation. A first valid guess
+- Back/leave offers Save & pause, Abandon game and Continue playing. Pause and
+  abandonment commit before navigation. Home, Tutorial Play Now and replay use
+  the same occupied-slot decision, passing only owner/round IDs to Game.
+  A first valid guess
   marks a round played; wins, give-ups and abandonments contribute once to
   local statistics. Tutorial practice contributes nothing. See
   [Durable player progress](player-progress.md) for formulas and retention.

@@ -107,7 +107,8 @@ device until cloud backup is added. Local histories remain separate by player,
 and guest history is imported only after confirmation. Friend secrets are
 handed to Game in memory. Once a round starts, a local SQLite database
 stores its secret, guesses, difficulty, hint use and outcome across launches.
-Entering Game restores any unfinished guest round. Local statistics begin with
+Home offers Resume for saved rounds; starting another requires an explicit
+choice. Save & pause preserves pending input and the Medium hint. Local statistics begin with
 this update; no historical totals are invented. See
 [Durable player progress](docs/player-progress.md) for storage and backup rules.
 
