@@ -1,8 +1,9 @@
 # Lifetime Hard wins — scoring contract v1
 
 Logical key: `lifetime_single_hard_wins_v1`. PGS project: **552743622678**.
-The generated leaderboard ID is not yet configured. GUESSER-21 must keep
-ranking/submission unavailable until the real resource is configured and tested.
+The configured tester-draft leaderboard ID is `CgkIlrDZkIsQEAIQDA`.
+The Android adapter uses this real resource; public availability still requires
+the owner's PGS publication step.
 
 ## Player-facing contract
 
@@ -23,6 +24,12 @@ The function validates every record, rejects foreign owners and conflicting
 copies of one ID, and deduplicates identical records. Corruption or an unresolved
 revision conflict fails closed; the integration must defer submission and keep
 offline play available. Never convert validation failure to a score of zero.
+
+Runtime restored history uses `LifetimeHardWins.scoreFacts` over validated
+completed outcomes, so a redacted cloud receipt need not reconstruct its hidden
+number or guesses. `ProvideHardWinsLeaderboard` requires the selected connected
+player, the current generation and the exact server-confirmed cloud projection
+stamp before submitting. Android SDK boundaries recheck that live scope.
 
 Eligibility requires LOCAL provenance, supported rules version 1, immutable
 Single Player mode, Hard difficulty, valid secret/guess data, at least one guess,

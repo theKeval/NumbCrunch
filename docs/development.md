@@ -93,7 +93,8 @@ and [release notes](https://developers.google.com/android/guides/releases)
 document this version and the Android 7.0/API 24 baseline. Shared libraries
 retain their lower minimum because they do not depend on the Play Games SDK.
 SDK initialization and connection state run for both debug and release;
-player identities are not written to diagnostic logs. This dependency upgrade does not yet record Game Stats.
+player identities are not written to diagnostic logs. Five Game Stats report
+new completed-round activity; their queue is separate from exact local totals.
 
 Use a Google Play-enabled device with an existing Play Games profile. The
 profile's Google account must be listed in Play Console's Play Games Services
@@ -109,11 +110,35 @@ keeps local play available. Automatic profile-creation prompts remain suppressed
 Account changes happen in device Play Games settings; the app has no custom
 Google sign-out or browser flow.
 
-Connection status is separate from backup: progress remains device-only until
-cloud backup is implemented. Selected local profiles survive offline launches.
+Connection status is separate from backup: only a confirmed Google save is
+shown as Saved. Pending/offline writes stay pending; Guest selection stays
+device-only. Selected local profiles survive offline launches.
 Guest history is added to one account only after confirmation, with immutable
 round owners and IDs retained. Both saved rounds survive a guest/account merge.
 See [player connection](player-connection.md) for integration and verification.
+
+### Verify connected player features
+
+Use the tester drafts listed in [publication handoff](player-data-publication.md).
+On Home, inspect Cloud backup separately from connection. Start a Medium round,
+submit a guess, spend its hint, enter partial input, then Save and pause. Confirm
+Saved before attempting restoration. Verify the same state on a second
+Play-enabled installation when available; reopening one phone does not establish
+cross-device synchronization. See [cloud backup](cloud-backup.md) for conflict
+recovery, quota limits and safe tester checks.
+
+Complete Tutorial normally for its achievement; skipping is not completion.
+Check native Achievements from Home or Statistics. Play a new Single Player Hard
+win for leaderboard eligibility; Easy/Medium and every Double round must leave
+that total unchanged. Ranking views are all-time only. Game Stats reports new
+occurrences, not imported history, and SDK buffering does not prove server
+ingestion. Follow [Game Stats v1](play-games-game-stats-v1.md) for safe logs and
+filter checks. Never seed fabricated scores into a real leaderboard.
+
+Selecting another player while a request is pending must not redirect its data.
+Test no-network and no-Play-services behavior while keeping local play intact;
+wireless-debugging tests must retain an available control connection. Record
+real and simulated coverage separately in [QA evidence](player-progress-qa.md).
 
 For SDK upgrades, build and lint the debug app, run domain/gameplay unit tests,
 and inspect `:numbcrunch:dependencies --configuration releaseRuntimeClasspath`
