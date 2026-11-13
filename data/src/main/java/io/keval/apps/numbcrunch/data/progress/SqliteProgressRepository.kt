@@ -131,12 +131,12 @@ class SqliteProgressRepository(
         }
     }
 
-    override suspend fun updateRound(round: RoundRecord, expectedRevision: Long): RoundRecord = transaction { db ->
+    override suspend fun updateRound(round: RoundRecord, expected: RoundRecord): RoundRecord = transaction { db ->
         val previous = find(db, round.id) ?: throw RoundConflictException()
         if (previous == round) return@transaction previous // Retry after a committed response was lost.
-        if (previous.revision != expectedRevision) throw RoundConflictException()
+        if (previous != expected) throw RoundConflictException()
         previous.validateSuccessor(round)
-        db.update("rounds", values(round), "id = ? AND revision = ?", arrayOf(round.id, expectedRevision.toString()))
+        db.update("rounds", values(round), "id = ? AND revision = ?", arrayOf(round.id, expected.revision.toString()))
             .also { if (it != 1) throw RoundConflictException() }
         if (round.status.isTerminal) GameStatsOutboxStore.onLocalTerminal(db, round, localOwnerAccount(db, round.ownerId))
         round

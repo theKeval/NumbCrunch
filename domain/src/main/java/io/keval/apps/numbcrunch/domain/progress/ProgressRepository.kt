@@ -21,7 +21,8 @@ interface ProgressRepository {
     suspend fun unfinishedRound(ownerId: String): RoundRecord?
     suspend fun unfinishedRounds(ownerId: String): List<RoundRecord>
     suspend fun createRound(round: RoundRecord): RoundRecord
-    suspend fun updateRound(round: RoundRecord, expectedRevision: Long): RoundRecord
+    /** Compare the complete previous record atomically: cloud forks can share a numeric revision. */
+    suspend fun updateRound(round: RoundRecord, expected: RoundRecord): RoundRecord
 
     /** Import is atomic and idempotent. Conflicting copies require explicit resolution by the sync layer. */
     suspend fun importRounds(ownerId: String, rounds: List<RoundRecord>)

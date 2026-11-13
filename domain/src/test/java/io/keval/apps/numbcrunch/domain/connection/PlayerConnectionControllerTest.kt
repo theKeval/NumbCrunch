@@ -149,7 +149,7 @@ private class FakeProfiles : ProgressRepository {
     override suspend fun unfinishedRound(ownerId: String): RoundRecord? = null
     override suspend fun unfinishedRounds(ownerId: String) = emptyList<RoundRecord>()
     override suspend fun createRound(round: RoundRecord): RoundRecord = error("Not used")
-    override suspend fun updateRound(round: RoundRecord, expectedRevision: Long): RoundRecord = error("Not used")
+    override suspend fun updateRound(round: RoundRecord, expected: RoundRecord): RoundRecord = error("Not used")
     override suspend fun importRounds(ownerId: String, rounds: List<RoundRecord>) = Unit
     override suspend fun importLegacyRound(round: RoundRecord): RoundRecord? = error("Not used")
 }

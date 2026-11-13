@@ -45,7 +45,7 @@ class PlayerOwnershipDatabaseTest {
         assertTrue(runCatching { repository.selectProfile(guest.id) }.isFailure)
         assertNull(repository.findRound(b.id, guestRound.id))
         assertEquals(guestRound, repository.findRound(a.id, guestRound.id))
-        val updated = repository.updateRound(guestRound.editInput("9", 11), guestRound.revision)
+        val updated = repository.updateRound(guestRound.editInput("9", 11), guestRound)
         assertEquals(guest.id, updated.ownerId)
         repository.close()
         repository = SqliteProgressRepository(context, name)

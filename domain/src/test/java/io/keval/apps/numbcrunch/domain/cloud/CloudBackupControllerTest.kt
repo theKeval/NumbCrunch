@@ -53,6 +53,22 @@ class CloudBackupControllerTest {
         assertNotEquals(repository.local.cloudProjectionStamp(), controller.state.value.reconciledStamp)
     }
 
+    @Test fun observedWriteWhileFinalCoverageReadReturnsOlderSnapshotCannotShowSaved() = runBlocking {
+        val repository = FakeRepository(empty)
+        val controller = CloudBackupController(repository) { 20 }
+        repository.onExport = { count ->
+            if (count == 4) {
+                repository.local = empty.copy(versions = listOf(CloudRoundVersion.initial(round)))
+                controller.localProgressChanged()
+            }
+        }
+        controller.synchronize("player", 1, SavedGamesGateway { local, accept ->
+            CloudWriteResult(accept(local), true)
+        }) { true }
+        assertEquals(BackupStatus.PENDING, controller.state.value.status)
+        assertFalse(controller.state.value.reconciliationReady)
+    }
+
     @Test fun staleAccountCallbackCannotImportOrReviveConnection() = runBlocking {
         val repository = FakeRepository(empty)
         val controller = CloudBackupController(repository)
@@ -137,7 +153,12 @@ class CloudBackupControllerTest {
         var preferred: String? = null
         var importCount = 0
         var beforeLastBackupRead: () -> Unit = {}
-        override suspend fun exportCloudProgress(accountPlayerId: String) = local.also { it.validate(accountPlayerId) }
+        var exportCount = 0
+        var onExport: (Int) -> Unit = {}
+        override suspend fun exportCloudProgress(accountPlayerId: String) = local.also {
+            it.validate(accountPlayerId)
+            onExport(++exportCount)
+        }
         override suspend fun pendingCloudMerge(accountPlayerId: String) = pending
         override suspend fun retainPendingMerge(accountPlayerId: String, progress: CloudProgress) { pending = progress }
         override suspend fun lastConfirmedBackup(accountPlayerId: String): Long? { beforeLastBackupRead(); return confirmedAt }

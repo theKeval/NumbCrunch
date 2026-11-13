@@ -26,12 +26,12 @@ class CloudProgressDatabaseTest {
         var won = a.createRound(round("won", aProfile.id))
         for (change in listOf<(RoundRecord) -> RoundRecord>({ it.editInput("456", 11) }, { it.submitGuess(12) },
             { it.useHint(0, 13) }, { it.editInput("123", 14) }, { it.submitGuess(15) }))
-            won = a.updateRound(change(won), won.revision)
+            won = a.updateRound(change(won), won)
         a.recordTutorialCompletion(TutorialCompletion(aProfile.id, 16))
         var paused = a.createRound(round("paused", aProfile.id).copy(createdAt = 16, updatedAt = 16))
         for (change in listOf<(RoundRecord) -> RoundRecord>({ it.editInput("456", 17) }, { it.submitGuess(18) },
             { it.useHint(0, 19) }, { it.editInput("0", 20) }, { it.pause(21) }))
-            paused = a.updateRound(change(paused), paused.revision)
+            paused = a.updateRound(change(paused), paused)
         val cloud = a.exportCloudProgress("platform-player")
         assertTrue(cloud.versions.single { it.roundId == "won" }.terminal)
         b.importResolvedProgress("platform-player", cloud, paused.id)
@@ -53,8 +53,8 @@ class CloudProgressDatabaseTest {
         val owner = a.activatePlayerProfile("player")
         val target = b.activatePlayerProfile("player")
         val created = a.createRound(round("source", owner.id))
-        val input = a.updateRound(created.editInput("123", 11), created.revision)
-        a.updateRound(input.submitGuess(12), input.revision)
+        val input = a.updateRound(created.editInput("123", 11), created)
+        a.updateRound(input.submitGuess(12), input)
         a.recordTutorialCompletion(TutorialCompletion(owner.id, 13))
         val cloud = a.exportCloudProgress("player")
         context.openOrCreateDatabase(bName, 0, null).use {
@@ -76,15 +76,32 @@ class CloudProgressDatabaseTest {
         val base = a.exportCloudProgress("player")
         val remoteRecord = local.editInput("7", 11)
         val remote = base.copy(versions = listOf(base.versions.single().advance(remoteRecord)))
-        local = a.updateRound(local.editInput("8", 12), local.revision)
+        local = a.updateRound(local.editInput("8", 12), local)
         val conflict = CloudMerge.merge(a.exportCloudProgress("player"), remote, "player")
         a.retainPendingMerge("player", conflict.progress)
         val resolved = CloudMerge.resolve(conflict.progress, local.id, remote.versions.single().versionId)
-        local = a.updateRound(local.editInput("89", 13), local.revision)
+        local = a.updateRound(local.editInput("89", 13), local)
         assertTrue(runCatching { a.importResolvedProgress("player", resolved.progress, local.id) }.exceptionOrNull() is CloudImportConflict)
         assertEquals(local, a.findRound(owner.id, local.id))
         a.close(); a = SqliteProgressRepository(context, aName)
         assertNotNull(a.pendingCloudMerge("player"))
+    }
+
+    @Test fun equalRevisionCloudBranchCannotBeOverwrittenByStaleGameplayWrite() = runBlocking {
+        val owner = a.activatePlayerProfile("player")
+        val created = a.createRound(round("same-revision", owner.id))
+        val base = a.exportCloudProgress("player")
+        val remoteRecord = created.editInput("7", 11)
+        val remote = base.copy(versions = listOf(base.versions.single().advance(remoteRecord)))
+        val local = a.updateRound(created.editInput("8", 11), created)
+        assertEquals(local.revision, remoteRecord.revision)
+        val conflict = CloudMerge.merge(a.exportCloudProgress("player"), remote, "player")
+        val chosen = CloudMerge.resolve(conflict.progress, local.id, remote.versions.single().versionId)
+        a.importResolvedProgress("player", chosen.progress, local.id)
+        assertEquals(remoteRecord, a.findRound(owner.id, local.id))
+        val failed = runCatching { a.updateRound(local.editInput("89", 12), local) }.exceptionOrNull()
+        assertTrue(failed is RoundConflictException)
+        assertEquals(remoteRecord, a.findRound(owner.id, local.id))
     }
 
     @Test fun migrationFromSchemaTwoPreservesLocalRound() = runBlocking {
@@ -108,7 +125,7 @@ class CloudProgressDatabaseTest {
         val first = a.exportCloudProgress("player")
         a.retainPendingMerge("player", first)
         repeat(12) { index ->
-            current = a.updateRound(current.editInput((index % 10).toString(), 11L + index), current.revision)
+            current = a.updateRound(current.editInput((index % 10).toString(), 11L + index), current)
             a.exportCloudProgress("player")
         }
         assertEquals(first, a.pendingCloudMerge("player"))

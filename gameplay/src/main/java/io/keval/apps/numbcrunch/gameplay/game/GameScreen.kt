@@ -174,7 +174,31 @@ fun GameRoute(
         modifier = modifier,
         onLeaderboardClick = { viewModel.onDismissWinDialog(); onLeaderboardClick() },
     )
-    if (uiState.hasPersistenceError) {
+    if (uiState.roundRecovery != null) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.progress_changed_title)) },
+            text = { Text(stringResource(when {
+                uiState.hasPersistenceError -> R.string.progress_reload_failed
+                uiState.roundRecovery == RoundRecovery.COMPLETED -> R.string.progress_completed_elsewhere
+                else -> R.string.progress_updated_elsewhere
+            })) },
+            confirmButton = {
+                if (uiState.roundRecovery == RoundRecovery.UPDATED) TextButton(
+                    onClick = if (uiState.hasPersistenceError) viewModel::onRetryPersistence else viewModel::onReloadChangedRound,
+                    enabled = !uiState.isSaving,
+                ) { Text(stringResource(R.string.progress_reload_saved)) }
+                else TextButton(onClick = onExitToHome, enabled = !uiState.isSaving) {
+                    Text(stringResource(R.string.progress_back_home))
+                }
+            },
+            dismissButton = {
+                if (uiState.roundRecovery == RoundRecovery.UPDATED) TextButton(onClick = onExitToHome, enabled = !uiState.isSaving) {
+                    Text(stringResource(R.string.progress_back_home))
+                }
+            },
+        )
+    } else if (uiState.hasPersistenceError) {
         AlertDialog(
             onDismissRequest = viewModel::onDismissPersistenceError,
             title = { Text(stringResource(R.string.progress_save_failed_title)) },

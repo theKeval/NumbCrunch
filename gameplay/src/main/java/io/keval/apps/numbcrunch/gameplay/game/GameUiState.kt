@@ -5,6 +5,8 @@ import io.keval.apps.numbcrunch.domain.game.Difficulty
 import io.keval.apps.numbcrunch.domain.game.GuessEvaluation
 import io.keval.apps.numbcrunch.gameplay.home.PlayerMode
 
+enum class RoundRecovery { UPDATED, COMPLETED }
+
 data class GameUiState(
     val roundId: String? = null,
     val ownerId: String? = null,
@@ -12,6 +14,7 @@ data class GameUiState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val hasPersistenceError: Boolean = false,
+    val roundRecovery: RoundRecovery? = null,
     val playerMode: PlayerMode = PlayerMode.SINGLE,
     val difficulty: Difficulty = Difficulty.HARD,
     val guesses: List<GuessEvaluation> = emptyList(),
@@ -31,7 +34,7 @@ data class GameUiState(
     val hintedGuessIndex: Int? = null,
 ) {
     val isRoundOver: Boolean get() = isWon || isGivenUp || isAbandoned
-    private val canInteract: Boolean get() = !isLoading && !hasPersistenceError && !isRoundOver && !isPaused
+    private val canInteract: Boolean get() = !isLoading && !hasPersistenceError && roundRecovery == null && !isRoundOver && !isPaused
     val canEnter: Boolean get() = canInteract && currentInput.length == CODE_LENGTH
     val canDelete: Boolean get() = canInteract && currentInput.isNotEmpty()
 

@@ -67,6 +67,19 @@ The stamp is captured inside the import transaction and granted readiness only
 after exact cloud confirmation. Computing this bounded canonical projection
 belongs off the UI thread and should fail closed on invalid/oversized data. A
 new local win, guest claim or tutorial completion cannot use an older ready flag.
+A local-change revision also fences the final coverage read: a write observed
+while that read is in flight keeps the status Pending even if the read returned
+an older snapshot.
+
+If cloud reconciliation replaces the revision currently displayed on the game
+screen, the next attempted action opens an explicit recovery choice. Every local
+write compares the full expected record in the SQLite transaction, because two
+cloud branches can have the same numeric revision. The old
+view remains visible until the player reloads the committed successor or returns
+Home. A completed cloud receipt offers Home and updated statistics rather than
+inventing missing guess history, another outcome, or a successful pause. SDK
+results that arrive after cancellation are closed/released, and archive download
+limits are enforced while fetching chunks rather than after accumulating them.
 
 ## Console and privacy
 
@@ -97,6 +110,9 @@ evidence, rollback and migrations. `GameStatsTransactionTest` verifies that loca
 terminal facts and their outbox write commit together, retries deduplicate, and
 remote namespaces do not replay activity. `CloudBackupCardTest` checks pending
 copy, retry, secret-free conflict controls, cancellation and account changes.
+`SnapshotTaskCancellationTest` verifies cleanup of undelivered SDK results.
+`GameCloudRecoveryTest` exercises stale-game reload and receipt-only completion
+through the real screen and an isolated SQLite database.
 These fixtures do not prove real cross-device Saved Games behavior.
 
 `LiveCloudRestoreTest` is opt-in and skipped by default. With an already

@@ -22,16 +22,16 @@ class GameStatsTransactionTest {
     @Test fun terminalAndOutboxCommitOrRollbackTogetherAndReplayIsDeduplicated() = runBlocking {
         val profile = a.activatePlayerProfile("player")
         val start = a.createRound(round(profile.id))
-        val entered = a.updateRound(start.editInput("123", 2), start.revision)
+        val entered = a.updateRound(start.editInput("123", 2), start)
         context.openOrCreateDatabase(aName, 0, null).use {
             it.execSQL("CREATE TRIGGER reject_event BEFORE INSERT ON game_stats_outbox BEGIN SELECT RAISE(ABORT, 'test failure'); END")
         }
-        assertTrue(runCatching { a.updateRound(entered.submitGuess(3), entered.revision) }.isFailure)
+        assertTrue(runCatching { a.updateRound(entered.submitGuess(3), entered) }.isFailure)
         assertEquals(entered, a.findRound(profile.id, start.id))
         assertTrue(a.observePending("player").first().isEmpty())
         context.openOrCreateDatabase(aName, 0, null).use { it.execSQL("DROP TRIGGER reject_event") }
-        val won = a.updateRound(entered.submitGuess(3), entered.revision)
-        a.updateRound(won, entered.revision)
+        val won = a.updateRound(entered.submitGuess(3), entered)
+        a.updateRound(won, entered)
         assertEquals(1, a.observePending("player").first().size)
         assertTrue(a.observePending("another-player").first().isEmpty())
     }
@@ -40,11 +40,11 @@ class GameStatsTransactionTest {
         val source = a.activatePlayerProfile("player")
         val target = b.activatePlayerProfile("player")
         val start = a.createRound(round(source.id))
-        val paused = a.updateRound(start.pause(2), start.revision)
+        val paused = a.updateRound(start.pause(2), start)
         b.importResolvedProgress("player", a.exportCloudProgress("player"), paused.id)
-        val resumed = b.updateRound(paused.resume(3), paused.revision)
-        val entered = b.updateRound(resumed.editInput("123", 4), resumed.revision)
-        b.updateRound(entered.submitGuess(5), entered.revision)
+        val resumed = b.updateRound(paused.resume(3), paused)
+        val entered = b.updateRound(resumed.editInput("123", 4), resumed)
+        b.updateRound(entered.submitGuess(5), entered)
         assertEquals(1L, b.exportProgress(target.id).statistics.wins)
         assertTrue(b.observePending("player").first().isEmpty())
         assertTrue(a.observePending("player").first().isEmpty())

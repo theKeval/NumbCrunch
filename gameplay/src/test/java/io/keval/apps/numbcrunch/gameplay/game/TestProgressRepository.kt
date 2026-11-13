@@ -74,12 +74,12 @@ internal class TestProgressRepository : ProgressRepository {
         }
         return round
     }
-    override suspend fun updateRound(round: RoundRecord, expectedRevision: Long): RoundRecord {
+    override suspend fun updateRound(round: RoundRecord, expected: RoundRecord): RoundRecord {
         updateGate?.await()
         writeCheck()
-        val previous = records.value.single { it.id == round.id }
+        val previous = records.value.singleOrNull { it.id == round.id } ?: throw RoundConflictException()
         if (previous == round) return previous
-        if (previous.revision != expectedRevision) throw RoundConflictException()
+        if (previous != expected) throw RoundConflictException()
         previous.validateSuccessor(round)
         records.value = records.value.map { if (it.id == round.id) round else it }
         return round

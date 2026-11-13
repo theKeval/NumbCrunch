@@ -1,6 +1,8 @@
 package io.keval.apps.numbcrunch.domain.cloud
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +17,7 @@ class CloudBackupController(
     private val mutex = Mutex()
     private val mutableState = MutableStateFlow(CloudBackupState())
     val state: StateFlow<CloudBackupState> = mutableState.asStateFlow()
+    private var localChangeRevision = 0L
 
     suspend fun synchronize(account: String, generation: Long, gateway: SavedGamesGateway, isCurrent: () -> Boolean) = mutex.withLock {
         if (!isCurrent()) return
@@ -25,14 +28,15 @@ class CloudBackupController(
             mutableState.value = mutableState.value.copy(lastSuccessfulBackup = lastBackup)
             val local = repository.exportCloudProgress(account)
             val pending = repository.pendingCloudMerge(account)
-            val initial = pending?.let { CloudMerge.merge(local, it, account).progress } ?: local
+            val initial = pending?.let { withContext(Dispatchers.Default) { CloudMerge.merge(local, it, account).progress } } ?: local
             ensureCurrent(isCurrent)
             val result = gateway.exchange(initial) { candidate ->
                 ensureCurrent(isCurrent)
                 // Local input may have committed while the network was loading. Re-read before import.
                 val fresh = repository.exportCloudProgress(account)
-                val merged = CloudMerge.merge(fresh, candidate, account)
+                val merged = withContext(Dispatchers.Default) { CloudMerge.merge(fresh, candidate, account) }
                 val selected = repository.preferredCloudRound(account)
+                ensureCurrent(isCurrent)
                 if (merged.roundConflicts.isNotEmpty() || (merged.unfinishedRoundIds.size > 1 && selected !in merged.unfinishedRoundIds)) {
                     repository.retainPendingMerge(account, merged.progress)
                     throw CloudChoiceRequired(merged.progress)
@@ -46,9 +50,11 @@ class CloudBackupController(
             if (result.serverConfirmed) {
                 val at = now()
                 repository.recordConfirmedBackup(account, at)
-                val currentStamp = repository.exportCloudProgress(account).cloudProjectionStamp()
+                val observedRevision = localChangeRevision
+                val confirmedLocal = repository.exportCloudProgress(account)
+                val currentStamp = withContext(Dispatchers.Default) { confirmedLocal.cloudProjectionStamp() }
                 ensureCurrent(isCurrent)
-                val covered = currentStamp == mutableState.value.reconciledStamp
+                val covered = currentStamp == mutableState.value.reconciledStamp && observedRevision == localChangeRevision
                 mutableState.value = mutableState.value.copy(status = if (covered) BackupStatus.SAVED else BackupStatus.PENDING,
                     lastSuccessfulBackup = at, reconciliationReady = covered)
             } else mutableState.value = mutableState.value.copy(status = BackupStatus.PENDING)
@@ -94,6 +100,7 @@ class CloudBackupController(
     }
 
     fun localProgressChanged() {
+        localChangeRevision++
         if (mutableState.value.status == BackupStatus.SAVED) mutableState.value = mutableState.value.copy(
             status = BackupStatus.PENDING, reconciliationReady = false)
     }

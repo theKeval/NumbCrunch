@@ -13,6 +13,7 @@ import com.google.android.gms.tasks.Task
 import io.keval.apps.numbcrunch.domain.cloud.*
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -39,7 +40,7 @@ class AndroidSavedGamesGateway(
                     checkAccount()
                     stage = "open_root"
                     val maxFileSize = client.maxDataSize.awaitSnapshotTask()
-                    var result = client.open(CloudCodec.ROOT_NAME, true, SnapshotsClient.RESOLUTION_POLICY_MANUAL).awaitSnapshotTask()
+                    var result = client.open(CloudCodec.ROOT_NAME, true, SnapshotsClient.RESOLUTION_POLICY_MANUAL).awaitOpenedSnapshot()
                     var current = local
                     repeat(3) {
                         checkAccount()
@@ -66,7 +67,7 @@ class AndroidSavedGamesGateway(
                             check(withContext(Dispatchers.IO) { conflict.resolutionSnapshotContents.writeBytes(bundle.manifest) }) { "Snapshot write failed" }
                             checkAccount()
                             result = client.resolveConflict(conflict.conflictId, server.metadata.snapshotId,
-                                description(), conflict.resolutionSnapshotContents).awaitSnapshotTask()
+                                description(), conflict.resolutionSnapshotContents).awaitOpenedSnapshot()
                         } else {
                             val snapshot = track(requireNotNull(result.data))
                             stage = "read_root"
@@ -133,10 +134,11 @@ class AndroidSavedGamesGateway(
         val manifest = readBytes(snapshot)
         if (manifest.isEmpty()) return null
         val names = CloudCodec.chunkNames(manifest, accountPlayerId)
+        var totalBytes = manifest.size.toLong()
         val chunks = names.associateWith { name ->
             checkAccount()
-            val result = client.open(name, false, SnapshotsClient.RESOLUTION_POLICY_MANUAL).awaitSnapshotTask()
-            if (result.isConflict) {
+            val result = client.open(name, false, SnapshotsClient.RESOLUTION_POLICY_MANUAL).awaitOpenedSnapshot()
+            val bytes = if (result.isConflict) {
                 val conflict = requireNotNull(result.conflict)
                 val first = track(conflict.snapshot); val second = track(conflict.conflictingSnapshot)
                 val a = readBytes(first); val b = readBytes(second)
@@ -148,6 +150,9 @@ class AndroidSavedGamesGateway(
                 val chunk = track(requireNotNull(result.data))
                 readBytes(chunk).also { client.discardAndClose(chunk).awaitSnapshotTask() }
             }
+            totalBytes += bytes.size
+            require(totalBytes <= CloudCodec.MAX_TOTAL_BYTES) { "Cloud archive limit exceeded" }
+            bytes
         }
         return withContext(Dispatchers.Default) { CloudCodec.decode(manifest, chunks, accountPlayerId) }
     }
@@ -156,7 +161,7 @@ class AndroidSavedGamesGateway(
         bundle.chunks.forEach { (name, bytes) ->
             require(bytes.size <= maxFileSize)
             checkAccount()
-            var result = client.open(name, true, SnapshotsClient.RESOLUTION_POLICY_MANUAL).awaitSnapshotTask()
+            var result = client.open(name, true, SnapshotsClient.RESOLUTION_POLICY_MANUAL).awaitOpenedSnapshot()
             var completed = false
             repeat(3) {
                 if (!completed) {
@@ -169,8 +174,9 @@ class AndroidSavedGamesGateway(
                             require(existing.isEmpty() || existing.contentEquals(bytes)) { "Immutable chunk content changed" }
                         }
                         check(withContext(Dispatchers.IO) { conflict.resolutionSnapshotContents.writeBytes(bytes) }) { "Chunk write failed" }
+                        checkAccount()
                         result = client.resolveConflict(conflict.conflictId, first.metadata.snapshotId,
-                            description(), conflict.resolutionSnapshotContents).awaitSnapshotTask()
+                            description(), conflict.resolutionSnapshotContents).awaitOpenedSnapshot()
                     } else {
                         val snapshot = track(requireNotNull(result.data))
                         val existing = readBytes(snapshot)
@@ -192,7 +198,7 @@ class AndroidSavedGamesGateway(
         checkAccount()
         val required = bundle.chunks.keys + if (includeRoot) setOf(CloudCodec.ROOT_NAME) else emptySet()
         if (required.isEmpty()) return true
-        val loaded = client.load(true).awaitSnapshotTask()
+        val loaded = client.load(true).awaitSnapshotTask { it.get()?.release() }
         val metadata = loaded.get() ?: return false
         try {
             if (loaded.isStale) return false
@@ -201,7 +207,7 @@ class AndroidSavedGamesGateway(
             if (entries.keys != required || entries.values.any { it.hasChangePending() }) return false
             for ((name, entry) in entries) {
                 checkMetadataAccount(entry)
-                val result = client.open(entry, SnapshotsClient.RESOLUTION_POLICY_MANUAL).awaitSnapshotTask()
+                val result = client.open(entry, SnapshotsClient.RESOLUTION_POLICY_MANUAL).awaitOpenedSnapshot()
                 if (result.isConflict) {
                     result.conflict?.let { track(it.snapshot); track(it.conflictingSnapshot) }
                     return false
@@ -216,7 +222,22 @@ class AndroidSavedGamesGateway(
         } finally { metadata.release() }
     }
 
-    private fun track(snapshot: Snapshot): Snapshot = snapshot.also { opened += it }
+    private fun track(snapshot: Snapshot): Snapshot = snapshot.also {
+        if (opened.none { previous -> previous === it }) opened += it
+    }
+
+    private suspend fun Task<SnapshotsClient.DataOrConflict<Snapshot>>.awaitOpenedSnapshot(): SnapshotsClient.DataOrConflict<Snapshot> =
+        awaitSnapshotTask { result ->
+            val snapshots = if (result.isConflict) result.conflict?.let { listOf(it.snapshot, it.conflictingSnapshot) }.orEmpty()
+                else listOfNotNull(result.data)
+            snapshots.forEach { snapshot -> runCatching {
+                if (!snapshot.snapshotContents.isClosed) client.discardAndClose(snapshot)
+            } }
+        }.also { result ->
+            // Register ownership before another suspension can cancel the exchange.
+            if (result.isConflict) result.conflict?.let { track(it.snapshot); track(it.conflictingSnapshot) }
+            else result.data?.let(::track)
+        }
 
     private suspend fun readBytes(snapshot: Snapshot): ByteArray {
         checkSnapshotAccount(snapshot)
@@ -246,12 +267,16 @@ class AndroidSavedGamesGateway(
     private fun description() = SnapshotMetadataChange.Builder().setDescription("NumbCrunch player progress").build()
 }
 
-private suspend fun <T> Task<T>.awaitSnapshotTask(): T = suspendCancellableCoroutine { continuation ->
+@OptIn(ExperimentalCoroutinesApi::class)
+internal suspend fun <T> Task<T>.awaitSnapshotTask(releaseIfCancelled: (T) -> Unit = {}): T = suspendCancellableCoroutine { continuation ->
     addOnCompleteListener { task ->
         if (continuation.isActive) when {
-            task.isCanceled -> continuation.resumeWithException(CancellationException("Saved Games request cancelled"))
-            task.isSuccessful -> continuation.resume(task.result)
+            task.isCanceled -> continuation.resumeWithException(IOException("Saved Games request cancelled"))
+            task.isSuccessful -> {
+                val value = task.result
+                continuation.resume(value) { releaseIfCancelled(value) }
+            }
             else -> continuation.resumeWithException(task.exception ?: IOException("Saved Games request failed"))
-        }
+        } else if (task.isSuccessful) releaseIfCancelled(task.result)
     }
 }
