@@ -17,14 +17,18 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /** Activity-scoped SDK adapter. No per-player identifiers or event contents are logged. */
-class AndroidGameStatsGateway(private val activity: Activity) : GameStatsGateway {
-    override suspend fun currentAccountPlayerId(): String? =
-        (AndroidPlayGamesGateway(activity).authenticate(false) as? ConnectionResult.Connected)?.player?.id
+class AndroidGameStatsGateway(private val activity: Activity, private val stillCurrent: () -> Boolean) : GameStatsGateway {
+    override suspend fun currentAccountPlayerId(): String? {
+        if (!stillCurrent()) return null
+        val account = (AndroidPlayGamesGateway(activity).authenticate(false) as? ConnectionResult.Connected)?.player?.id
+        return account.takeIf { stillCurrent() }
+    }
 
     override suspend fun record(expectedAccountPlayerId: String, event: RoundCompletedEvent): GameStatsRecordResult {
         return try {
             event.validate()
-            if (currentAccountPlayerId() != expectedAccountPlayerId) return GameStatsRecordResult.UNKNOWN
+            if (!isCurrentGameStatsAccount(expectedAccountPlayerId, stillCurrent, ::currentAccountPlayerId))
+                return GameStatsRecordResult.UNKNOWN
             val client = PlayGames.getGameStatsClient(activity)
             val payload = PlayerGameEvent.Builder(RoundCompletedEvent.NAME)
                 .addProperty("playerMode", event.playerMode.name)
@@ -35,9 +39,11 @@ class AndroidGameStatsGateway(private val activity: Activity) : GameStatsGateway
                 .addProperty("hardSoloWin", event.hardSoloWin)
                 .addProperty("unaidedMediumSoloWin", event.unaidedMediumSoloWin)
                 .build()
+            if (!stillCurrent()) return GameStatsRecordResult.UNKNOWN
             withTimeout(20_000) {
                 suspendCancellableCoroutine<Unit> { continuation ->
-                    client.recordEventImmediate(payload).addOnCompleteListener { task ->
+                    if (!stillCurrent()) continuation.resumeWithException(IllegalStateException("Game Stats scope changed"))
+                    else client.recordEventImmediate(payload).addOnCompleteListener { task ->
                         if (continuation.isActive) {
                             if (task.isSuccessful) continuation.resume(Unit)
                             else continuation.resumeWithException(task.exception ?: IllegalStateException("Game Stats buffering interrupted"))
@@ -46,7 +52,7 @@ class AndroidGameStatsGateway(private val activity: Activity) : GameStatsGateway
                 }
             }
             // The SDK owns retry after local acceptance. This void request cannot confirm server ingestion.
-            runCatching { client.requestEventsUpload() }
+            if (stillCurrent()) runCatching { client.requestEventsUpload() }
             diagnostic("buffered")
             GameStatsRecordResult.BUFFERED
         } catch (_: TimeoutCancellationException) {
