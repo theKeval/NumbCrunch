@@ -138,7 +138,9 @@ private fun modeLabel(mode: RoundMode) = stringResource(
 
 @Composable
 private fun StatFilter(text: String, selected: Boolean, onClick: () -> Unit) {
-    FilterChip(selected = selected, onClick = onClick, label = { Text(text) }, modifier = Modifier.heightIn(min = 48.dp))
+    FilterChip(selected = selected, onClick = onClick, label = { Text(text) },
+        colors = woodFilterChipColors(), border = woodFilterChipBorder(selected),
+        modifier = Modifier.heightIn(min = 48.dp))
 }
 
 @Composable

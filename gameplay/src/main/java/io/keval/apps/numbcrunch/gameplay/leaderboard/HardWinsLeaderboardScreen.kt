@@ -97,6 +97,7 @@ fun HardWinsLeaderboardScreen(
                 RankingWindow.entries.forEach { window ->
                     FilterChip(selected = state.window == window, onClick = { onWindow(window) },
                         label = { Text(stringResource(if (window == RankingWindow.TOP) R.string.hard_board_top else R.string.hard_board_near)) },
+                        colors = woodFilterChipColors(), border = woodFilterChipBorder(state.window == window),
                         modifier = Modifier.heightIn(min = 48.dp))
                 }
             }

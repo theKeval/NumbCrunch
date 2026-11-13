@@ -30,7 +30,7 @@ class HardWinsLeaderboardScreenTest {
     @Test fun allTimeRanksAndLongNamesRemainReachableWithLargeText() {
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 2f)) {
-                NumbCrunchTheme { Box(Modifier.size(320.dp, 480.dp)) {
+                NumbCrunchTheme(darkTheme = false, dynamicColor = false) { Box(Modifier.size(320.dp, 480.dp)) {
                     HardWinsLeaderboardScreen(connected, {}, {}, {})
                 } }
             }
