@@ -4,7 +4,8 @@
 
 - JDK 17
 - Android Studio with Android SDK 36, or equivalent command-line tools
-- An emulator or device running Android 5.0/API 21 or later
+- An emulator or device running Android 7.0/API 24 or later for NumbCrunch;
+  Guesser V1 still supports Android 5.0/API 21 or later
 
 Set `ANDROID_HOME`, or create an untracked `local.properties`:
 
@@ -86,6 +87,14 @@ revamp's debug build is `io.keval.apps.numbcrunch.debug`, labelled
 
 ### Test Play Games sign-in
 
+NumbCrunch pins `play-services-games-v2:22.1.0`, which exposes `GameStatsClient`
+and `PlayerGameEvent`. The [Google SDK setup guide](https://developers.google.com/android/guides/setup)
+and [release notes](https://developers.google.com/android/guides/releases)
+document this version and the Android 7.0/API 24 baseline. Shared libraries
+retain their lower minimum because they do not depend on the Play Games SDK.
+SDK initialization runs for both debug and release; only diagnostic sign-in
+logging is debug-only. This dependency upgrade does not yet record Game Stats.
+
 Use a Google Play-enabled device with an existing Play Games profile. The
 profile's Google account must be listed in Play Console's Play Games Services
 testers and, while OAuth is in Testing, in Google Cloud's OAuth test users.
@@ -100,6 +109,14 @@ adb logcat -d -s NumbCrunchPlayGames:D
 
 Look for `Authenticated: true` from the latest launch. The SDK signs in at
 startup and suppresses automatic prompts to create a Play Games profile.
+
+For SDK upgrades, build and lint the debug app, run domain/gameplay unit tests,
+and inspect `:numbcrunch:dependencies --configuration releaseRuntimeClasspath`
+and `:numbcrunch:processReleaseMainManifest` without building a signed release.
+Verify Welcome, Tutorial, game and audio settings on API 24 and a current API,
+including offline and unavailable Play services. Install over an existing
+debug build without clearing app storage to check settings and tutorial
+progress survive. Devices below API 24 cannot install this update.
 
 ## Changing the Revamp
 

@@ -18,6 +18,9 @@ see [docs/releasing.md](docs/releasing.md) for the release process.
   remarks. Difficulty labels use the warm gold game styling.
 - Google Play Games Services can sign in players with an existing profile.
   Gameplay remains available offline and without an account.
+- Require Android 7.0 (API 24) or later and upgrade the Play Games SDK to 22.1.0
+  for Game Stats support. Older Android devices cannot receive this update;
+  Guesser V1's Android 5.0 minimum is unchanged.
 
 ## 1.1.0 (versionCode 3) — internal and closed testing
 

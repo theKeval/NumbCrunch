@@ -1,6 +1,6 @@
 # NumbCrunch Privacy Policy
 
-**Effective date:** November 12, 2026
+**Effective date:** November 13, 2026
 
 This privacy policy explains how the NumbCrunch game for Android (package
 `io.keval.apps.numbcrunch`), published on Google Play by Keval Langalia ("we",
@@ -29,6 +29,7 @@ diagnostics to improve its services. Google encrypts this data in transit and
 handles it under [Google's Privacy Policy](https://policies.google.com/privacy).
 You can manage your sign-in and profile in your device's Play Games settings.
 NumbCrunch keeps your rounds and game progress on your device.
+Play Games sign-in needs an internet connection; playing rounds does not.
 
 ## Information Stored Only on Your Device
 

@@ -174,8 +174,9 @@ Gameplay help only pops back to the existing round.
 
 The revamp application ID is `io.keval.apps.numbcrunch`, with debug builds
 suffixed `.debug` so they install beside the Play release; the V1 application
-ID is `com.thekeval.guesser`. Both target SDK 36, require API 21 or later, use Java
-17, and are locked to portrait orientation.
+ID is `com.thekeval.guesser`. Both target SDK 36, use Java 17, and are locked to
+portrait orientation. NumbCrunch requires API 24 or later for its Play Games
+SDK; V1 retains its API 21 minimum.
 
 ## Guesser V1 Architecture
 
