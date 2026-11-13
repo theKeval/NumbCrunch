@@ -1,5 +1,7 @@
 package io.keval.apps.numbcrunch.gameplay.game
 
+import androidx.compose.foundation.layout.heightIn
+
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
@@ -138,6 +140,7 @@ fun GameRoute(
     roundId: String? = null,
     onRequestNewRound: (NewRoundRequest) -> Unit = {},
     modifier: Modifier = Modifier,
+    onLeaderboardClick: () -> Unit = {},
 ) {
     val viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(friendSecretNumber, difficulty, progressRepository, ownerId, roundId))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -169,6 +172,7 @@ fun GameRoute(
         onWinHome = onExitToHome,
         onDismissWinDialog = viewModel::onDismissWinDialog,
         modifier = modifier,
+        onLeaderboardClick = { viewModel.onDismissWinDialog(); onLeaderboardClick() },
     )
     if (uiState.hasPersistenceError) {
         AlertDialog(
@@ -212,6 +216,7 @@ fun GameScreen(
     onDismissWinDialog: () -> Unit,
     onSaveAndPause: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onLeaderboardClick: (() -> Unit)? = null,
 ) {
     var remarkInfo by remember { mutableStateOf<GuessEvaluation?>(null) }
     GuessResultFeedback(uiState)
@@ -368,6 +373,7 @@ fun GameScreen(
                 onPlayAgain = onPlayAgain,
                 onHome = onWinHome,
                 onDismiss = onDismissWinDialog,
+                onLeaderboard = onLeaderboardClick,
             )
         }
     }
@@ -887,6 +893,7 @@ private fun WinDialog(
     onPlayAgain: () -> Unit,
     onHome: () -> Unit,
     onDismiss: () -> Unit,
+    onLeaderboard: (() -> Unit)?,
 ) {
     val guessCount = uiState.guesses.size
     val player = LocalGameSoundPlayer.current
@@ -909,7 +916,7 @@ private fun WinDialog(
                 .pointerInput(Unit) { detectTapGestures { onDismiss() } },
             contentAlignment = Alignment.Center,
         ) {
-            WinDialogCard(uiState, guessCount, onPlayAgain, onHome)
+            WinDialogCard(uiState, guessCount, onPlayAgain, onHome, onLeaderboard)
             ConfettiBurst(modifier = Modifier.fillMaxSize())
         }
     }
@@ -921,6 +928,7 @@ private fun WinDialogCard(
     guessCount: Int,
     onPlayAgain: () -> Unit,
     onHome: () -> Unit,
+    onLeaderboard: (() -> Unit)?,
 ) {
     val pop = remember { Animatable(0.6f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 380f)) }
@@ -950,6 +958,11 @@ private fun WinDialogCard(
                 primaryText = stringResource(R.string.win_play_again),
                 onPrimary = onPlayAgain,
             )
+            if (uiState.difficulty == Difficulty.HARD && onLeaderboard != null) {
+                TextButton(onClick = onLeaderboard, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.hard_board_title), color = NumbCrunchGoldCream)
+                }
+            }
         } else {
             KeypadKey(
                 label = stringResource(R.string.win_home),

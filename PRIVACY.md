@@ -10,7 +10,8 @@ This privacy policy explains how the NumbCrunch game for Android (package
 
 NumbCrunch is a game for players of all ages, including young children. You
 can play offline and without an account. Google Play Games Services provides
-optional sign-in for players with a Play Games profile. NumbCrunch has no
+optional sign-in, cloud saves, achievements, Game Stats, and a leaderboard for
+players with an eligible Play Games profile. NumbCrunch has no
 advertising, chat, or in-app purchases.
 
 ## Information the App Collects
@@ -32,19 +33,23 @@ diagnostics to improve its services. Google encrypts this data in transit and
 handles it under [Google's Privacy Policy](https://policies.google.com/privacy).
 You can manage your sign-in and profile in your device's Play Games settings.
 Choosing Connect in the app can also open Google's profile-creation flow.
-NumbCrunch keeps your rounds and game progress on your device.
-Play Games sign-in needs an internet connection; playing rounds does not.
+When your connected Play Games player is selected, the app backs up that
+player's progress and submits eligible accomplishments to Google. Selecting
+Guest keeps new guest progress separate. Connecting does not import existing
+guest history without your confirmation. Internet access is needed for these
+online features; playing rounds and viewing local statistics do not need it.
 
-## Information Stored Only on Your Device
+## Information Stored on Your Device
 
 To work as a game, NumbCrunch keeps a small amount of information on your
-device. We cannot see or access any of it.
+device. We do not operate a server that receives this information.
 
 - **Settings:** whether background music and sound effects are turned on.
 - **Game setup:** your selected difficulty, so Android can restore the Home
   screen after closing the app in the background.
 - **First-launch progress:** whether you have completed or skipped the first-launch
-  introduction and tutorial.
+  introduction and tutorial. A separate completion record confirms that you
+  visited the tutorial pages, solved its practice puzzle, and finished it.
 - **Round history and statistics:** local profile and round identifiers, hidden
   numbers, guesses, pending input, player mode, difficulty, hint use, outcomes,
   and times are retained to restore play and calculate your totals. This
@@ -56,25 +61,66 @@ device. We cannot see or access any of it.
   this device. Importing guest progress requires your confirmation and links
   that guest history to one Play Games player; it cannot be imported into a
   different player's history.
+- **Online delivery state:** which achievement totals Google has acknowledged,
+  the status of cloud backup, and pending or previously attempted Game Stats
+  reports. These records help avoid repeated submissions.
 
 Save and pause keeps the same round, including a Double Player hidden number
 and pending input, until it is resumed, finished, or explicitly abandoned.
 Pausing does not count as a loss or a leave.
 
-You can delete all of this at any time by clearing the app's storage in your
-device's settings or by uninstalling the app.
+## Cloud Saves and Shared Progress
+
+For a selected, connected player, Google Play Games Saved Games stores round
+outcomes, statistics source records, tutorial completion, player and round
+identifiers, ownership claims, and unfinished games. An unfinished game includes
+its hidden number, guesses, pending input, and hint state so it can resume
+exactly, including in Double Player mode. New completed-game records omit their
+hidden number and individual guesses. Earlier backup chunks containing an
+unfinished game's details are retained and are not automatically erased when
+that game finishes. Cloud saves
+are associated with that Play Games player. Conflicting saves may require your
+choice before synchronization continues.
+
+The app sends achievement progress and the lifetime count of eligible Single
+Player Hard wins to Google. Double Player games and Single Player Easy or
+Medium games do not count toward this leaderboard. Rankings can show gamer
+names and scores according to Google's profile visibility settings.
+
+For eligible players, new completed rounds can send a Game Stats event containing
+mode, difficulty, outcome, number of guesses, hint use, and whether the result
+qualifies as a Hard solo win or an unaided Medium solo win. These events contain
+no hidden number, individual guess, name, email, or app-generated player or
+round identifier. Google associates events with the signed-in Play Games
+profile and calculates its counters. Local statistics remain available even
+when Google reporting is delayed or unavailable. Old history and restored games
+are not replayed as new Game Stats events.
+
+## Retention and Deletion
+
+Local round history is retained until you clear the app's storage or uninstall
+it. These actions do not delete Google's cloud saves, achievements, Game Stats,
+or leaderboard records. Signing in again can restore cloud progress.
+
+Use Google's Play Games profile controls to manage or delete game data stored
+by Google. Google's retention and deletion rules apply to its services. To
+avoid resubmitting retained local progress after deleting Google's copy, stop
+using the connected player and clear the app's local storage as well. The app
+does not offer an in-game cloud-account deletion or progress-reset feature.
 
 ## Device Backups
 
 If you have turned on backup for your Android device, Android may include the
-app's settings and tutorial progress in your device backup, which Google stores
+app's settings, first-launch progress, and per-player achievement acknowledgment
+cache in your device backup, which Google stores
 in your Google account. This backup is managed by Android and Google under
 [Google's Privacy Policy](https://policies.google.com/privacy); we cannot
 access it. You can control backups in your device's settings.
 The round-history database, including player selection and ownership claims,
 is excluded from Android's automatic cloud backup and device-transfer rules.
-Its contents stay on this installation; this version
-does not yet back up game history through Play Games Saved Games.
+Play Games Saved Games is a separate backup of the selected connected player's
+progress. Its backup status is shown in the game; pending changes are not
+promised to be recoverable on another device until Google confirms the save.
 
 ## Google Play
 
@@ -98,8 +144,11 @@ NumbCrunch is designed for everyone, including children under 13 and
 children under 5. We do not ask children for personal details. Children can
 play without signing in. Google manages supervised Play Games profiles through
 Family Link. Parents and guardians can manage that profile through Google and
-remove the game's on-device settings, tutorial progress, and round history by clearing the
-app's storage or uninstalling it. They can contact us using the details below.
+manage data stored by Google using Google's profile controls. Google does not
+enable Game Stats for players under 13. Availability of other online features
+depends on the profile and Google's rules; we do not collect an age or bypass
+those restrictions. Clearing app storage or uninstalling removes local data
+only. Parents and guardians can contact us using the details below.
 
 ## Changes to This Policy
 

@@ -102,8 +102,9 @@ See the [architecture guide](docs/architecture.md) and
 
 Gameplay works offline and without an account. Google Play Games Services
 can authenticate returning players at launch; **Connect Play Games** opens
-Google’s sign-in/profile-creation flow on request. Player progress stays on this
-device until cloud backup is added. Local histories remain separate by player,
+Google’s sign-in/profile-creation flow on request. A selected connected player
+uses Saved Games backup, achievements, Game Stats and an all-time Hard solo
+leaderboard. Local histories remain separate by player,
 and guest history is imported only after confirmation. Friend secrets are
 handed to Game in memory. Once a round starts, a local SQLite database
 stores its secret, guesses, difficulty, hint use and outcome across launches.

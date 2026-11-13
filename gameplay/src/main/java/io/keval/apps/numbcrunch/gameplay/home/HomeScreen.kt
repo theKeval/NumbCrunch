@@ -83,6 +83,7 @@ fun HomeRoute(
     progressLoadFailed: Boolean = false,
     onRetryProgress: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onLeaderboardClick: () -> Unit = {},
 ) {
     val viewModel: HomeViewModel = viewModel(
         factory = HomeViewModel.factory(getWelcomeMessageUseCase),
@@ -111,6 +112,7 @@ fun HomeRoute(
         progressLoadFailed = progressLoadFailed,
         onRetryProgress = onRetryProgress,
         modifier = modifier,
+        onLeaderboardClick = onLeaderboardClick,
     )
 }
 
@@ -132,6 +134,7 @@ fun HomeScreen(
     progressLoadFailed: Boolean = false,
     onRetryProgress: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onLeaderboardClick: () -> Unit = {},
 ) {
     // The friend-secret keypad sheet; it opens by itself when Double Player is chosen.
     var secretSheetOpen by rememberSaveable { mutableStateOf(false) }
@@ -280,7 +283,7 @@ fun HomeScreen(
                         onStatisticsClick = onStatisticsClick,
                     )
 
-                    PlayGamesConnectionRoute(Modifier.widthIn(max = 420.dp).padding(top = 16.dp))
+                    PlayGamesConnectionRoute(Modifier.widthIn(max = 420.dp).padding(top = 16.dp), onLeaderboardClick)
 
                     Spacer(modifier = Modifier.height(gapAfterControls))
                 }

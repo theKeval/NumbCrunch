@@ -66,7 +66,7 @@ import io.keval.apps.numbcrunch.gameplay.privacy.PrivacyPolicyScreen
 import io.keval.apps.numbcrunch.gameplay.settings.SettingsRoute
 import io.keval.apps.numbcrunch.gameplay.navigation.TUTORIAL_ROUTE
 import io.keval.apps.numbcrunch.gameplay.navigation.WELCOME_ROUTE
-import io.keval.apps.numbcrunch.gameplay.tutorial.TutorialScreen
+import io.keval.apps.numbcrunch.gameplay.tutorial.TutorialProgressRoute
 import io.keval.apps.numbcrunch.gameplay.welcome.WelcomeScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -208,6 +208,7 @@ fun NumbCrunchNavHost(
                 onAboutClick = { navController.navigate(ABOUT_ROUTE) },
                 onSettingsClick = { navController.navigate(SETTINGS_ROUTE) { launchSingleTop = true } },
                 onStatisticsClick = { navController.navigate(STATISTICS_ROUTE) { launchSingleTop = true } },
+                onLeaderboardClick = { navController.navigate(HARD_WINS_ROUTE) { launchSingleTop = true } },
                 ongoingRounds = progressState.ongoingRounds,
                 onResumeRound = roundEntry::resume,
                 progressLoadFailed = progressState.hasReadError,
@@ -260,7 +261,8 @@ fun NumbCrunchNavHost(
                     if (completed) goHome() else completionResolved = true
                 }
             } else {
-                TutorialScreen(
+                TutorialProgressRoute(
+                    progress = appContainer.progressRepository,
                     onBack = {
                         if (firstRun) completeFirstRun() else navController.navigateUp()
                     },
@@ -361,6 +363,7 @@ fun NumbCrunchNavHost(
                 ownerId = entry.arguments?.getString(GAME_OWNER_ARGUMENT),
                 roundId = entry.arguments?.getString(GAME_ROUND_ARGUMENT),
                 onRequestNewRound = roundEntry::requestStart,
+                onLeaderboardClick = { navController.navigate(HARD_WINS_ROUTE) { launchSingleTop = true } },
                 friendSecretNumber = appContainer.getFriendSecretUseCase(),
                 difficulty = Difficulty.fromName(entry.arguments?.getString(GAME_DIFFICULTY_ARGUMENT))
                     ?: Difficulty.HARD,
